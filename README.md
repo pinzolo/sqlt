@@ -1,0 +1,2 @@
+# sqlt
+SQL Template
