@@ -71,6 +71,19 @@ ORDER BY name DESC
 $ go get github.com/pinzolo/sqlt
 ```
 
+## Support
+
+### Go version
+
+Go 1.8 or later
+
+### Databses
+
+* PostgreSQL
+* MySQL
+* Oracle
+* SQL Server
+
 ## Contribution
 
 1. Fork ([https://github.com/pinzolo/sqlt/fork](https://github.com/pinzolo/sqlt/fork))
