@@ -105,14 +105,14 @@ func TestDropSample(t *testing.T) {
 func TestExecWithMap(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id = /*%p "id" %*/1
+	WHERE id IN /*% in "ids" %*/(1, 2)
 	AND name = /*% p "name" %*/'John Doe'
 	/*%- if .onlyMale %*/
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
 	m := map[string]interface{}{
-		"id":       1,
+		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
 		"name":     "Alex",
@@ -124,20 +124,26 @@ func TestExecWithMap(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id = $1
-	AND name = $2
+	WHERE id IN ($1,$2,$3)
+	AND name = $4
 	AND sex = 'MALE'
 	ORDER BY name DESC`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 2 {
+	if len(vals) != 4 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
 	if v, ok := vals[0].(int); !ok || v != 1 {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
-	if v, ok := vals[1].(string); !ok || v != "Alex" {
+	if v, ok := vals[1].(int); !ok || v != 2 {
+		t.Errorf("exec failed: values should have 2, but got %v", vals)
+	}
+	if v, ok := vals[2].(int); !ok || v != 3 {
+		t.Errorf("exec failed: values should have 3, but got %v", vals)
+	}
+	if v, ok := vals[3].(string); !ok || v != "Alex" {
 		t.Errorf("exec failed: values should have 'Alex', but got %v", vals)
 	}
 }
@@ -145,14 +151,14 @@ func TestExecWithMap(t *testing.T) {
 func TestExecNamedWithMap(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id = /*%p "id" %*/1
+	WHERE id IN /*% in "ids" %*/(1, 2)
 	AND name = /*% p "name" %*/'John Doe'
 	/*%- if .onlyMale %*/
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
 	m := map[string]interface{}{
-		"id":       1,
+		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": false,
 		"name":     "Alex",
@@ -164,21 +170,29 @@ func TestExecNamedWithMap(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id = :id
+	WHERE id IN (:ids1,:ids2,:ids3)
 	AND name = :name
 	ORDER BY name DESC`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 2 {
+	if len(vals) != 4 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
 	v1 := vals[0]
-	if v, ok := v1.Value.(int); v1.Name != "id" || !ok || v != 1 {
-		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
+	if v, ok := v1.Value.(int); v1.Name != "ids1" || !ok || v != 1 {
+		t.Errorf("exec failed: values should have ids1 = 1, but got %v", vals)
 	}
 	v2 := vals[1]
-	if v, ok := v2.Value.(string); v2.Name != "name" || !ok || v != "Alex" {
+	if v, ok := v2.Value.(int); v2.Name != "ids2" || !ok || v != 2 {
+		t.Errorf("exec failed: values should have ids2 = 2, but got %v", vals)
+	}
+	v3 := vals[2]
+	if v, ok := v3.Value.(int); v3.Name != "ids3" || !ok || v != 3 {
+		t.Errorf("exec failed: values should have ids3 = 3, but got %v", vals)
+	}
+	v4 := vals[3]
+	if v, ok := v4.Value.(string); v4.Name != "name" || !ok || v != "Alex" {
 		t.Errorf("exec failed: values should have name = 'Alex', but got %v", vals)
 	}
 }

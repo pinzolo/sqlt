@@ -10,11 +10,79 @@
 
 Simple SQL template.
 
+## Sample (PostgreSQL)
+
+### Template
+
+Template is compatible with SQL.  
+Use `/*%` and `%*/` as delimiter instead of `{{` and `}}` for processing template.
+
+```sql
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id
+```
+
+### Go code
+
+* func `p` replace to placeholder by name.
+* func `in` deploy slice values to parentheses and placeholders.
+* If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
+
+```go
+// sql is generated SQL from template.
+// vals are arguments for generated SQL.
+sql, vals, err := New(Postgres).Exec(s, sql.Named("ids", []int{1,2,3}), sql.Named("order", "name DESC"), sql.Named("onlyMale", false), sql.Named("name", "Alex"))
+```
+
+### Generated SQL
+
+#### call `Exec`
+
+```sql
+SELECT *
+FROM users
+WHERE id IN ($1, $2, $3)
+AND name = $4
+ORDER BY name DESC
+```
+
+#### call `ExecNamed`
+
+Currently there are also many drivers who do not support `sql.NamedArg`.  
+In future, driver support `sql.NamedArg`, you only need to change `Exec` to `ExecNamed`.
+
+```sql
+SELECT *
+FROM users
+WHERE id IN (:ids1, :ids2, :ids3)
+AND name = :name
+ORDER BY name DESC
+```
+
 ## Install
 
 ```bash
 $ go get github.com/pinzolo/sqlt
 ```
+
+## Support
+
+### Go version
+
+Go 1.8 or later
+
+### Databses
+
+* PostgreSQL
+* MySQL
+* Oracle
+* SQL Server
 
 ## Contribution
 
