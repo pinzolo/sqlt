@@ -21,6 +21,8 @@ var (
 	Postgres = postgres{}
 	// MySQL is MySQL dialect resolver.
 	MySQL = mysql{}
+	// Oracle is Oracle dialect resolver.
+	Oracle = oracle{}
 )
 
 type postgres struct{}
@@ -56,5 +58,23 @@ func (m mysql) Placeholder() string {
 }
 
 func (m mysql) NamedPlaceholderPrefix() string {
+	return ":"
+}
+
+type oracle struct{}
+
+func (o oracle) IsOrdinalPlaceholderSupported() bool {
+	return true
+}
+
+func (o oracle) OrdinalPlaceHolderPrefix() string {
+	return ":"
+}
+
+func (o oracle) Placeholder() string {
+	return ""
+}
+
+func (o oracle) NamedPlaceholderPrefix() string {
 	return ":"
 }
