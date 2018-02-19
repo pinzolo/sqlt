@@ -21,11 +21,24 @@ type context struct {
 	values    []interface{}
 }
 
-func newContext(named bool, dialect Dialect, args ...sql.NamedArg) *context {
+func newContextWithArgs(named bool, dialect Dialect, args ...sql.NamedArg) *context {
 	params := make([]*param, len(args))
 	for i, arg := range args {
 		params[i] = &param{NamedArg: arg}
 	}
+	return newContext(named, dialect, params)
+}
+
+func newContextWithMap(named bool, dialect Dialect, m map[string]interface{}) *context {
+	params := make([]*param, 0)
+	for k, v := range m {
+		arg := sql.Named(k, v)
+		params = append(params, &param{NamedArg: arg})
+	}
+	return newContext(named, dialect, params)
+}
+
+func newContext(named bool, dialect Dialect, params []*param) *context {
 	return &context{
 		named:     named,
 		dialect:   dialect,
