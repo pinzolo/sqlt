@@ -19,6 +19,8 @@ type Dialect interface {
 var (
 	// Postgres is PostgreSQL dialect resolver.
 	Postgres = postgres{}
+	// MySQL is MySQL dialect resolver.
+	MySQL = mysql{}
 )
 
 type postgres struct{}
@@ -36,5 +38,23 @@ func (p postgres) Placeholder() string {
 }
 
 func (p postgres) NamedPlaceholderPrefix() string {
+	return ":"
+}
+
+type mysql struct{}
+
+func (m mysql) IsOrdinalPlaceholderSupported() bool {
+	return false
+}
+
+func (m mysql) OrdinalPlaceHolderPrefix() string {
+	return ""
+}
+
+func (m mysql) Placeholder() string {
+	return "?"
+}
+
+func (m mysql) NamedPlaceholderPrefix() string {
 	return ":"
 }

@@ -5,61 +5,65 @@ import (
 	"testing"
 )
 
-func TestPostgresP(t *testing.T) {
+func TestMySQLP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(Postgres).Exec(s, sql.Named("id", 1))
+	sql, vals, err := New(MySQL).Exec(s, sql.Named("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id = $1`
+	WHERE id = ?`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
+
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
+
 	if v, ok := vals[0].(int); !ok || v != 1 {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
 }
 
-func TestPostgresRepeatedP(t *testing.T) {
+func TestMySQLRepeatedP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(Postgres).Exec(s, sql.Named("name", "test"))
+	sql, vals, err := New(MySQL).Exec(s, sql.Named("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE family_name = $1
-	OR given_name = $1
-	OR nick_name = $1`
+	WHERE family_name = ?
+	OR given_name = ?
+	OR nick_name = ?`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(vals) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", vals)
 	}
-	if v, ok := vals[0].(string); !ok || v != "test" {
-		t.Errorf("exec failed: values should have 'test', but got %v", vals)
+	for _, v := range vals {
+		if v, ok := v.(string); !ok || v != "test" {
+			t.Errorf("exec failed: values should have 'test', but got %v", vals)
+		}
 	}
 }
 
-func TestPostgresPNamed(t *testing.T) {
+func TestMySQLPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(Postgres).ExecNamed(s, sql.Named("id", 1))
+	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -82,13 +86,13 @@ func TestPostgresPNamed(t *testing.T) {
 	}
 }
 
-func TestPostgresRepeatedPNamed(t *testing.T) {
+func TestMySQLRepeatedPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(Postgres).ExecNamed(s, sql.Named("name", "test"))
+	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -113,18 +117,18 @@ func TestPostgresRepeatedPNamed(t *testing.T) {
 	}
 }
 
-func TestPostgresIn(t *testing.T) {
+func TestMySQLIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Postgres).Exec(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(MySQL).Exec(s, sql.Named("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN ($1,$2)`
+	WHERE id IN (?,?)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -142,11 +146,11 @@ func TestPostgresIn(t *testing.T) {
 	}
 }
 
-func TestPostgresInNamed(t *testing.T) {
+func TestMySQLInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Postgres).ExecNamed(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -173,18 +177,18 @@ func TestPostgresInNamed(t *testing.T) {
 	}
 }
 
-func TestPostgresInWithSingleValue(t *testing.T) {
+func TestMySQLInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Postgres).Exec(s, sql.Named("ids", 1))
+	sql, vals, err := New(MySQL).Exec(s, sql.Named("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN ($1)`
+	WHERE id IN (?)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -198,11 +202,11 @@ func TestPostgresInWithSingleValue(t *testing.T) {
 	}
 }
 
-func TestPostgresInNamedWithSingleValue(t *testing.T) {
+func TestMySQLInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Postgres).ExecNamed(s, sql.Named("ids", 1))
+	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -224,7 +228,7 @@ func TestPostgresInNamedWithSingleValue(t *testing.T) {
 	}
 }
 
-func TestPostgresOtherTemplateFeature(t *testing.T) {
+func TestMySQLOtherTemplateFeature(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1
@@ -232,14 +236,14 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, vals, err := New(Postgres).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true))
+	sql, vals, err := New(MySQL).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true))
 	if err != nil {
 		t.Error(err)
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id = $1
+	WHERE id = ?
 	AND sex = 'MALE'
 	ORDER BY name DESC`
 	if eSQL != sql {
