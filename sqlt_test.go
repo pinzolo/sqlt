@@ -1,6 +1,88 @@
 package sqlt
 
-import "testing"
+import (
+	"database/sql"
+	"testing"
+)
+
+func BenchmarkExec(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := `SELECT *
+		FROM users
+		WHERE id = /*%p "id" %*/1
+		AND name = /*% p "name" %*/'John Doe'
+		/*%- if .onlyMale %*/
+		AND sex = 'MALE'
+		/*%- end%*/
+		ORDER BY /*% .order %*/id`
+		_, _, err := New(Postgres).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true), sql.Named("name", "Alex"))
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkExecNamed(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := `SELECT *
+		FROM users
+		WHERE id = /*%p "id" %*/1
+		AND name = /*% p "name" %*/'John Doe'
+		/*%- if .onlyMale %*/
+		AND sex = 'MALE'
+		/*%- end%*/
+		ORDER BY /*% .order %*/id`
+		_, _, err := New(Postgres).ExecNamed(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true), sql.Named("name", "Alex"))
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+func BenchmarkExecWithMap(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := `SELECT *
+		FROM users
+		WHERE id = /*%p "id" %*/1
+		AND name = /*% p "name" %*/'John Doe'
+		/*%- if .onlyMale %*/
+		AND sex = 'MALE'
+		/*%- end%*/
+		ORDER BY /*% .order %*/id`
+		m := map[string]interface{}{
+			"id":       1,
+			"order":    "name DESC",
+			"onlyMale": true,
+			"name":     "Alex",
+		}
+		_, _, err := New(Postgres).ExecWithMap(s, m)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkExecNamedWithMap(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		s := `SELECT *
+		FROM users
+		WHERE id = /*%p "id" %*/1
+		AND name = /*% p "name" %*/'John Doe'
+		/*%- if .onlyMale %*/
+		AND sex = 'MALE'
+		/*%- end%*/
+		ORDER BY /*% .order %*/id`
+		m := map[string]interface{}{
+			"id":       1,
+			"order":    "name DESC",
+			"onlyMale": true,
+			"name":     "Alex",
+		}
+		_, _, err := New(Postgres).ExecNamedWithMap(s, m)
+		if err != nil {
+			b.Error(err)
+		}
+	}
+}
 
 func TestDropSample(t *testing.T) {
 	s := `SELECT *
