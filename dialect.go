@@ -23,6 +23,8 @@ var (
 	MySQL = mysql{}
 	// Oracle is Oracle dialect resolver.
 	Oracle = oracle{}
+	// SQLServer is SQLServer dialect resolver.
+	SQLServer = sqlserver{}
 )
 
 type postgres struct{}
@@ -77,4 +79,22 @@ func (o oracle) Placeholder() string {
 
 func (o oracle) NamedPlaceholderPrefix() string {
 	return ":"
+}
+
+type sqlserver struct{}
+
+func (s sqlserver) IsOrdinalPlaceholderSupported() bool {
+	return true
+}
+
+func (s sqlserver) OrdinalPlaceHolderPrefix() string {
+	return "@p"
+}
+
+func (s sqlserver) Placeholder() string {
+	return ""
+}
+
+func (s sqlserver) NamedPlaceholderPrefix() string {
+	return "@"
 }
