@@ -24,10 +24,10 @@ func New(dialect Dialect) SQLTemplate {
 	return SQLTemplate{dialect: dialect}
 }
 
-// Exec given template with given arguments.
+// Exec executes given template with given arguments.
 // This function replaces to normal placeholder.
 func (st SQLTemplate) Exec(text string, args ...sql.NamedArg) (string, []interface{}, error) {
-	c := newContext(false, st.dialect, args...)
+	c := newContextWithArgs(false, st.dialect, args...)
 	s, err := st.exec(c, text)
 	if err != nil {
 		return "", nil, err
@@ -35,10 +35,32 @@ func (st SQLTemplate) Exec(text string, args ...sql.NamedArg) (string, []interfa
 	return s, c.values, nil
 }
 
-// ExecNamed execute given template with given arguments.
+// ExecWithMap executes given template with given map parameters.
+// This function replaces to normal placeholder.
+func (st SQLTemplate) ExecWithMap(text string, m map[string]interface{}) (string, []interface{}, error) {
+	c := newContextWithMap(false, st.dialect, m)
+	s, err := st.exec(c, text)
+	if err != nil {
+		return "", nil, err
+	}
+	return s, c.values, nil
+}
+
+// ExecNamed executes given template with given arguments.
 // This function replaces to named placeholder.
 func (st SQLTemplate) ExecNamed(text string, args ...sql.NamedArg) (string, []sql.NamedArg, error) {
-	c := newContext(true, st.dialect, args...)
+	c := newContextWithArgs(true, st.dialect, args...)
+	s, err := st.exec(c, text)
+	if err != nil {
+		return "", nil, err
+	}
+	return s, c.namedArgs, nil
+}
+
+// ExecNamedWithMap executes given template with given map parameters.
+// This function replaces to named placeholder.
+func (st SQLTemplate) ExecNamedWithMap(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
+	c := newContextWithMap(true, st.dialect, m)
 	s, err := st.exec(c, text)
 	if err != nil {
 		return "", nil, err
