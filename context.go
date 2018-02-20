@@ -24,8 +24,8 @@ func newParam(name string, value interface{}) *param {
 type context struct {
 	named     bool
 	dialect   Dialect
-	namedArgs []sql.NamedArg
 	params    []*param
+	namedArgs []sql.NamedArg
 	values    []interface{}
 }
 
@@ -38,8 +38,8 @@ func newContext(named bool, dialect Dialect, m map[string]interface{}) *context 
 	return &context{
 		named:     named,
 		dialect:   dialect,
-		namedArgs: make([]sql.NamedArg, 0),
 		params:    params,
+		namedArgs: make([]sql.NamedArg, 0),
 		values:    make([]interface{}, 0),
 	}
 }
