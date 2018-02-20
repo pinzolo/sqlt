@@ -30,7 +30,7 @@ ORDER BY /*% .order %*/id
 
 ### Go code
 
-* func `p` replace to placeholder by name.
+* func `param` or `p` replace to placeholder by name.
 * func `in` deploy slice values to parentheses and placeholders.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 

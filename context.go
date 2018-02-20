@@ -70,7 +70,7 @@ func (c *context) addNamedArgs(name string, value interface{}) {
 	c.namedArgs = append(c.namedArgs, sql.Named(name, value))
 }
 
-func (c *context) p(name string) string {
+func (c *context) param(name string) string {
 	p := c.get(name)
 	if p == nil {
 		return ""
@@ -101,7 +101,7 @@ func (c *context) in(name string) string {
 
 	v := reflect.ValueOf(p.value)
 	if v.Kind() != reflect.Slice {
-		return "(" + c.p(name) + ")"
+		return "(" + c.param(name) + ")"
 	}
 
 	placeholders := make([]string, v.Len())
@@ -126,7 +126,8 @@ func (c *context) in(name string) string {
 
 func (c *context) funcMap() template.FuncMap {
 	return template.FuncMap{
-		"p":  c.p,
-		"in": c.in,
+		"param": c.param,
+		"p":     c.param,
+		"in":    c.in,
 	}
 }
