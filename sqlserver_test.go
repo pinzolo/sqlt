@@ -1,7 +1,6 @@
 package sqlt
 
 import (
-	"database/sql"
 	"testing"
 )
 
@@ -9,7 +8,7 @@ func TestSQLServerP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(SQLServer).Exec(s, sql.Named("id", 1))
+	sql, vals, err := New(SQLServer).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -34,7 +33,7 @@ func TestSQLServerRepeatedP(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(SQLServer).Exec(s, sql.Named("name", "test"))
+	sql, vals, err := New(SQLServer).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -59,7 +58,7 @@ func TestSQLServerPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(SQLServer).ExecNamed(s, sql.Named("id", 1))
+	sql, vals, err := New(SQLServer).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -88,7 +87,7 @@ func TestSQLServerRepeatedPNamed(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(SQLServer).ExecNamed(s, sql.Named("name", "test"))
+	sql, vals, err := New(SQLServer).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,7 +116,7 @@ func TestSQLServerIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(SQLServer).Exec(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(SQLServer).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -146,7 +145,7 @@ func TestSQLServerInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(SQLServer).ExecNamed(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(SQLServer).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -177,7 +176,7 @@ func TestSQLServerInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(SQLServer).Exec(s, sql.Named("ids", 1))
+	sql, vals, err := New(SQLServer).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -202,7 +201,7 @@ func TestSQLServerInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(SQLServer).ExecNamed(s, sql.Named("ids", 1))
+	sql, vals, err := New(SQLServer).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -232,7 +231,11 @@ func TestSQLServerOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, vals, err := New(SQLServer).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true))
+	sql, vals, err := New(SQLServer).Exec(s, map[string]interface{}{
+		"id":       1,
+		"order":    "name DESC",
+		"onlyMale": true,
+	})
 	if err != nil {
 		t.Error(err)
 	}

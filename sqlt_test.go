@@ -1,7 +1,6 @@
 package sqlt
 
 import (
-	"database/sql"
 	"testing"
 )
 
@@ -15,7 +14,13 @@ func BenchmarkExec(b *testing.B) {
 		AND sex = 'MALE'
 		/*%- end%*/
 		ORDER BY /*% .order %*/id`
-		_, _, err := New(Postgres).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true), sql.Named("name", "Alex"))
+		m := map[string]interface{}{
+			"id":       1,
+			"order":    "name DESC",
+			"onlyMale": true,
+			"name":     "Alex",
+		}
+		_, _, err := New(Postgres).Exec(s, m)
 		if err != nil {
 			b.Error(err)
 		}
@@ -32,52 +37,13 @@ func BenchmarkExecNamed(b *testing.B) {
 		AND sex = 'MALE'
 		/*%- end%*/
 		ORDER BY /*% .order %*/id`
-		_, _, err := New(Postgres).ExecNamed(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true), sql.Named("name", "Alex"))
-		if err != nil {
-			b.Error(err)
-		}
-	}
-}
-func BenchmarkExecWithMap(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		s := `SELECT *
-		FROM users
-		WHERE id = /*%p "id" %*/1
-		AND name = /*% p "name" %*/'John Doe'
-		/*%- if .onlyMale %*/
-		AND sex = 'MALE'
-		/*%- end%*/
-		ORDER BY /*% .order %*/id`
 		m := map[string]interface{}{
 			"id":       1,
 			"order":    "name DESC",
 			"onlyMale": true,
 			"name":     "Alex",
 		}
-		_, _, err := New(Postgres).ExecWithMap(s, m)
-		if err != nil {
-			b.Error(err)
-		}
-	}
-}
-
-func BenchmarkExecNamedWithMap(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		s := `SELECT *
-		FROM users
-		WHERE id = /*%p "id" %*/1
-		AND name = /*% p "name" %*/'John Doe'
-		/*%- if .onlyMale %*/
-		AND sex = 'MALE'
-		/*%- end%*/
-		ORDER BY /*% .order %*/id`
-		m := map[string]interface{}{
-			"id":       1,
-			"order":    "name DESC",
-			"onlyMale": true,
-			"name":     "Alex",
-		}
-		_, _, err := New(Postgres).ExecNamedWithMap(s, m)
+		_, _, err := New(Postgres).ExecNamed(s, m)
 		if err != nil {
 			b.Error(err)
 		}
@@ -102,7 +68,7 @@ func TestDropSample(t *testing.T) {
 	}
 }
 
-func TestExecWithMap(t *testing.T) {
+func TestExec(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*% in "ids" %*/(1, 2)
@@ -111,13 +77,12 @@ func TestExecWithMap(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	m := map[string]interface{}{
+	sql, vals, err := New(Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
 		"name":     "Alex",
-	}
-	sql, vals, err := New(Postgres).ExecWithMap(s, m)
+	})
 	if err != nil {
 		t.Error(err)
 	}
@@ -148,7 +113,7 @@ func TestExecWithMap(t *testing.T) {
 	}
 }
 
-func TestExecNamedWithMap(t *testing.T) {
+func TestExecNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*% in "ids" %*/(1, 2)
@@ -157,13 +122,12 @@ func TestExecNamedWithMap(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	m := map[string]interface{}{
+	sql, vals, err := New(Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": false,
 		"name":     "Alex",
-	}
-	sql, vals, err := New(Postgres).ExecNamedWithMap(s, m)
+	})
 	if err != nil {
 		t.Error(err)
 	}
@@ -194,5 +158,11 @@ func TestExecNamedWithMap(t *testing.T) {
 	v4 := vals[3]
 	if v, ok := v4.Value.(string); v4.Name != "name" || !ok || v != "Alex" {
 		t.Errorf("exec failed: values should have name = 'Alex', but got %v", vals)
+	}
+}
+
+func singleMap(k string, v interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		k: v,
 	}
 }

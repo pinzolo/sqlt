@@ -1,7 +1,6 @@
 package sqlt
 
 import (
-	"database/sql"
 	"testing"
 )
 
@@ -9,7 +8,7 @@ func TestMySQLP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(MySQL).Exec(s, sql.Named("id", 1))
+	sql, vals, err := New(MySQL).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -36,7 +35,7 @@ func TestMySQLRepeatedP(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(MySQL).Exec(s, sql.Named("name", "test"))
+	sql, vals, err := New(MySQL).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,7 +62,7 @@ func TestMySQLPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("id", 1))
+	sql, vals, err := New(MySQL).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,7 +91,7 @@ func TestMySQLRepeatedPNamed(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("name", "test"))
+	sql, vals, err := New(MySQL).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -121,7 +120,7 @@ func TestMySQLIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(MySQL).Exec(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(MySQL).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -150,7 +149,7 @@ func TestMySQLInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("ids", []int{1, 2}))
+	sql, vals, err := New(MySQL).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -181,7 +180,7 @@ func TestMySQLInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(MySQL).Exec(s, sql.Named("ids", 1))
+	sql, vals, err := New(MySQL).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -206,7 +205,7 @@ func TestMySQLInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(MySQL).ExecNamed(s, sql.Named("ids", 1))
+	sql, vals, err := New(MySQL).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -236,7 +235,11 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, vals, err := New(MySQL).Exec(s, sql.Named("id", 1), sql.Named("order", "name DESC"), sql.Named("onlyMale", true))
+	sql, vals, err := New(MySQL).Exec(s, map[string]interface{}{
+		"id":       1,
+		"order":    "name DESC",
+		"onlyMale": true,
+	})
 	if err != nil {
 		t.Error(err)
 	}
