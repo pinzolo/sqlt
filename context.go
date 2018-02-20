@@ -9,8 +9,16 @@ import (
 )
 
 type param struct {
-	sql.NamedArg
-	Index int
+	name  string
+	value interface{}
+	index int
+}
+
+func newParam(name string, value interface{}) *param {
+	return &param{
+		name:  name,
+		value: value,
+	}
 }
 
 type context struct {
@@ -25,7 +33,7 @@ func newContext(named bool, dialect Dialect, m map[string]interface{}) *context 
 	params := make([]*param, 0)
 	for k, v := range m {
 		arg := sql.Named(k, v)
-		params = append(params, &param{NamedArg: arg})
+		params = append(params, newParam(arg.Name, arg.Value))
 	}
 	return &context{
 		named:     named,
@@ -37,16 +45,16 @@ func newContext(named bool, dialect Dialect, m map[string]interface{}) *context 
 }
 
 func (c *context) parameters() map[string]interface{} {
-	paramMap := make(map[string]interface{})
+	m := make(map[string]interface{})
 	for _, p := range c.params {
-		paramMap[p.Name] = p.Value
+		m[p.name] = p.value
 	}
-	return paramMap
+	return m
 }
 
 func (c *context) get(name string) *param {
 	for _, p := range c.params {
-		if p.Name == name {
+		if p.name == name {
 			return p
 		}
 	}
@@ -69,19 +77,19 @@ func (c *context) p(name string) string {
 	}
 
 	if c.named {
-		c.addNamedArgs(p.Name, p.Value)
-		return c.dialect.NamedPlaceholderPrefix() + p.Name
+		c.addNamedArgs(p.name, p.value)
+		return c.dialect.NamedPlaceholderPrefix() + p.name
 	}
 
 	if c.dialect.IsOrdinalPlaceholderSupported() {
-		if p.Index == 0 {
-			c.values = append(c.values, p.Value)
-			p.Index = len(c.values)
+		if p.index == 0 {
+			c.values = append(c.values, p.value)
+			p.index = len(c.values)
 		}
-		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(p.Index)
+		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(p.index)
 	}
 
-	c.values = append(c.values, p.Value)
+	c.values = append(c.values, p.value)
 	return c.dialect.Placeholder()
 }
 
@@ -91,7 +99,7 @@ func (c *context) in(name string) string {
 		return ""
 	}
 
-	v := reflect.ValueOf(p.Value)
+	v := reflect.ValueOf(p.value)
 	if v.Kind() != reflect.Slice {
 		return "(" + c.p(name) + ")"
 	}
