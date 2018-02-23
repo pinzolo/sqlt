@@ -14,6 +14,12 @@ const (
 	RightDelim = "%*/"
 )
 
+var (
+	strRegex = regexp.MustCompile(`%\*/'[^']*'`)
+	inRegex  = regexp.MustCompile(`%\*/\([^\(\)]*\)`)
+	valRegex = regexp.MustCompile(`%\*/\S*`)
+)
+
 // SQLTemplate is template struct.
 type SQLTemplate struct {
 	dialect Dialect
@@ -59,11 +65,7 @@ func (st SQLTemplate) exec(c *context, text string) (string, error) {
 }
 
 func dropSample(text string) string {
-	endPat := `%\*/`
-	str := regexp.MustCompile(endPat + `'[^']*'`)
-	in := regexp.MustCompile(endPat + `\([^\(\)]*\)`)
-	val := regexp.MustCompile(endPat + `\S*`)
-	s := str.ReplaceAllString(text, RightDelim)
-	s = in.ReplaceAllString(s, RightDelim)
-	return val.ReplaceAllString(s, RightDelim)
+	s := strRegex.ReplaceAllString(text, RightDelim)
+	s = inRegex.ReplaceAllString(s, RightDelim)
+	return valRegex.ReplaceAllString(s, RightDelim)
 }
