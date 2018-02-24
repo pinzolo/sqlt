@@ -58,7 +58,7 @@ func (st SQLTemplate) exec(c *context, text string) (string, error) {
 		return "", err
 	}
 	buf := &bytes.Buffer{}
-	if err = t.Execute(buf, c.parameters()); err != nil {
+	if err = t.Execute(buf, c.paramMap); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
