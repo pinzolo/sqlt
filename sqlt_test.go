@@ -1,6 +1,7 @@
 package sqlt
 
 import (
+	"database/sql"
 	"testing"
 )
 
@@ -99,16 +100,16 @@ func TestExec(t *testing.T) {
 	if len(vals) != 4 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
-	if v, ok := vals[0].(int); !ok || v != 1 {
+	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
-	if v, ok := vals[1].(int); !ok || v != 2 {
+	if isInvalidInt(vals[1], 2) {
 		t.Errorf("exec failed: values should have 2, but got %v", vals)
 	}
-	if v, ok := vals[2].(int); !ok || v != 3 {
+	if isInvalidInt(vals[2], 3) {
 		t.Errorf("exec failed: values should have 3, but got %v", vals)
 	}
-	if v, ok := vals[3].(string); !ok || v != "Alex" {
+	if isInvalidString(vals[3], "Alex") {
 		t.Errorf("exec failed: values should have 'Alex', but got %v", vals)
 	}
 }
@@ -143,20 +144,16 @@ func TestExecNamed(t *testing.T) {
 	if len(vals) != 4 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
-	v1 := vals[0]
-	if v, ok := v1.Value.(int); v1.Name != "ids1" || !ok || v != 1 {
+	if isInvalidIntArg(vals[0], "ids1", 1) {
 		t.Errorf("exec failed: values should have ids1 = 1, but got %v", vals)
 	}
-	v2 := vals[1]
-	if v, ok := v2.Value.(int); v2.Name != "ids2" || !ok || v != 2 {
+	if isInvalidIntArg(vals[1], "ids2", 2) {
 		t.Errorf("exec failed: values should have ids2 = 2, but got %v", vals)
 	}
-	v3 := vals[2]
-	if v, ok := v3.Value.(int); v3.Name != "ids3" || !ok || v != 3 {
+	if isInvalidIntArg(vals[2], "ids3", 3) {
 		t.Errorf("exec failed: values should have ids3 = 3, but got %v", vals)
 	}
-	v4 := vals[3]
-	if v, ok := v4.Value.(string); v4.Name != "name" || !ok || v != "Alex" {
+	if isInvalidStringArg(vals[3], "name", "Alex") {
 		t.Errorf("exec failed: values should have name = 'Alex', but got %v", vals)
 	}
 }
@@ -265,4 +262,42 @@ func singleMap(k string, v interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		k: v,
 	}
+}
+
+func isInvalidInt(i interface{}, n int) bool {
+	v, ok := i.(int)
+	if !ok {
+		return true
+	}
+	return v != n
+}
+
+func isInvalidIntArg(arg sql.NamedArg, name string, n int) bool {
+	v, ok := arg.Value.(int)
+	if !ok {
+		return true
+	}
+	if arg.Name != name {
+		return true
+	}
+	return v != n
+}
+
+func isInvalidString(i interface{}, s string) bool {
+	v, ok := i.(string)
+	if !ok {
+		return true
+	}
+	return v != s
+}
+
+func isInvalidStringArg(arg sql.NamedArg, name string, s string) bool {
+	v, ok := arg.Value.(string)
+	if !ok {
+		return true
+	}
+	if arg.Name != name {
+		return true
+	}
+	return v != s
 }
