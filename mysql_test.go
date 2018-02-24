@@ -127,7 +127,7 @@ func TestMySQLIn(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (?,?)`
+	WHERE id IN (?, ?)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -156,7 +156,7 @@ func TestMySQLInNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (:ids1,:ids2)`
+	WHERE id IN (:ids1, :ids2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}

@@ -117,7 +117,7 @@ func (c *context) in(name string) string {
 		}
 		placeholders[i] = placeholder
 	}
-	return "(" + strings.Join(placeholders, ",") + ")"
+	return "(" + strings.Join(placeholders, ", ") + ")"
 }
 
 func (c *context) funcMap() template.FuncMap {

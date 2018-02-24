@@ -89,7 +89,7 @@ func TestExec(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN ($1,$2,$3)
+	WHERE id IN ($1, $2, $3)
 	AND name = $4
 	AND sex = 'MALE'
 	ORDER BY name DESC`
@@ -134,7 +134,7 @@ func TestExecNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (:ids1,:ids2,:ids3)
+	WHERE id IN (:ids1, :ids2, :ids3)
 	AND name = :name
 	ORDER BY name DESC`
 	if eSQL != sql {
@@ -222,7 +222,7 @@ func TestWithInvalidParamNameOnParamFunc(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN ($1,$2,$3)
+	WHERE id IN ($1, $2, $3)
 	AND name = /*! userName is unknown */
 	AND sex = 'MALE'
 	ORDER BY name DESC`

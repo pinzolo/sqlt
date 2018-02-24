@@ -123,7 +123,7 @@ func TestSQLServerIn(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (@p1,@p2)`
+	WHERE id IN (@p1, @p2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -152,7 +152,7 @@ func TestSQLServerInNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (@ids1,@ids2)`
+	WHERE id IN (@ids1, @ids2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
