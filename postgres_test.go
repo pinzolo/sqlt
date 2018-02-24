@@ -22,7 +22,7 @@ func TestPostgresP(t *testing.T) {
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-	if v, ok := vals[0].(int); !ok || v != 1 {
+	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
 }
@@ -49,7 +49,7 @@ func TestPostgresRepeatedP(t *testing.T) {
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-	if v, ok := vals[0].(string); !ok || v != "test" {
+	if isInvalidString(vals[0], "test") {
 		t.Errorf("exec failed: values should have 'test', but got %v", vals)
 	}
 }
@@ -72,11 +72,7 @@ func TestPostgresPNamed(t *testing.T) {
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-	if vals[0].Name != "id" {
-		t.Errorf("exec failed: named args should have arg named 'id', but got %v", vals)
-	}
-	v1 := vals[0]
-	if v, ok := v1.Value.(int); v1.Name != "id" || !ok || v != 1 {
+	if isInvalidIntArg(vals[0], "id", 1) {
 		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
 	}
 }
@@ -103,11 +99,7 @@ func TestPostgresRepeatedPNamed(t *testing.T) {
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-	if vals[0].Name != "name" {
-		t.Errorf("exec failed: named args should have arg named 'name', but got %v", vals)
-	}
-	v1 := vals[0]
-	if v, ok := v1.Value.(string); v1.Name != "name" || !ok || v != "test" {
+	if isInvalidStringArg(vals[0], "name", "test") {
 		t.Errorf("exec failed: values should have name = 'test', but got %v", vals)
 	}
 }
@@ -127,16 +119,13 @@ func TestPostgresIn(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-
 	if len(vals) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
-
-	if v, ok := vals[0].(int); !ok || v != 1 {
+	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
-
-	if v, ok := vals[1].(int); !ok || v != 2 {
+	if isInvalidInt(vals[1], 2) {
 		t.Errorf("exec failed: values should have 2, but got %v", vals)
 	}
 }
@@ -156,18 +145,13 @@ func TestPostgresInNamed(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-
 	if len(vals) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
 	}
-
-	v1 := vals[0]
-	if v, ok := v1.Value.(int); v1.Name != "ids1" || !ok || v != 1 {
+	if isInvalidIntArg(vals[0], "ids1", 1) {
 		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
 	}
-
-	v2 := vals[1]
-	if v, ok := v2.Value.(int); v2.Name != "ids2" || !ok || v != 2 {
+	if isInvalidIntArg(vals[1], "ids2", 2) {
 		t.Errorf("exec failed: values should have id = 2, but got %v", vals)
 	}
 }
@@ -187,12 +171,10 @@ func TestPostgresInWithSingleValue(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-
 	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-
-	if v, ok := vals[0].(int); !ok || v != 1 {
+	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
 }
@@ -212,13 +194,10 @@ func TestPostgresInNamedWithSingleValue(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-
 	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-
-	v1 := vals[0]
-	if v, ok := v1.Value.(int); v1.Name != "ids" || !ok || v != 1 {
+	if isInvalidIntArg(vals[0], "ids", 1) {
 		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
 	}
 }
@@ -248,12 +227,10 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-
 	if len(vals) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
 	}
-
-	if v, ok := vals[0].(int); !ok || v != 1 {
+	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
 	}
 }
