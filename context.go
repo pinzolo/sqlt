@@ -2,6 +2,7 @@ package sqlt
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -73,7 +74,7 @@ func (c *context) addNamedArgs(name string, value interface{}) {
 func (c *context) param(name string) string {
 	p := c.get(name)
 	if p == nil {
-		return ""
+		return unknownParamOutput(name)
 	}
 
 	if c.named {
@@ -96,7 +97,7 @@ func (c *context) param(name string) string {
 func (c *context) in(name string) string {
 	p := c.get(name)
 	if p == nil {
-		return ""
+		return unknownParamOutput(name)
 	}
 
 	v := reflect.ValueOf(p.value)
@@ -130,4 +131,8 @@ func (c *context) funcMap() template.FuncMap {
 		"p":     c.param,
 		"in":    c.in,
 	}
+}
+
+func unknownParamOutput(name string) string {
+	return fmt.Sprintf("/*! %s is unknown */", name)
 }

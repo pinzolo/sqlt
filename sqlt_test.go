@@ -161,6 +161,106 @@ func TestExecNamed(t *testing.T) {
 	}
 }
 
+func TestExecWithInvalidTemplate(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE id IN /*% in "ids" %*/(1, 2)
+	AND name = /*% pp "name" %*/'John Doe'
+	/*%- if .onlyMale %*/
+	AND sex = 'MALE'
+	/*%- end%*/
+	ORDER BY /*% .order %*/id`
+	_, _, err := New(Postgres).Exec(s, map[string]interface{}{
+		"ids":      []int{1, 2, 3},
+		"order":    "name DESC",
+		"onlyMale": true,
+		"name":     "Alex",
+	})
+	if err == nil {
+		t.Error("Exec with invalid template should raise error")
+	}
+}
+
+func TestExecNamedWithInvalidTemplate(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE id IN /*% in "ids" %*/(1, 2)
+	AND name = /*% pp "name" %*/'John Doe'
+	/*%- if .onlyMale %*/
+	AND sex = 'MALE'
+	/*%- end%*/
+	ORDER BY /*% .order %*/id`
+	_, _, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"ids":      []int{1, 2, 3},
+		"order":    "name DESC",
+		"onlyMale": true,
+		"name":     "Alex",
+	})
+	if err == nil {
+		t.Error("ExecNamed with invalid template should raise error")
+	}
+}
+
+func TestWithInvalidParamNameOnParamFunc(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE id IN /*% in "ids" %*/(1, 2)
+	AND name = /*% p "userName" %*/'John Doe'
+	/*%- if .onlyMale %*/
+	AND sex = 'MALE'
+	/*%- end%*/
+	ORDER BY /*% .order %*/id`
+	sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+		"ids":      []int{1, 2, 3},
+		"order":    "name DESC",
+		"onlyMale": true,
+		"name":     "Alex",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users
+	WHERE id IN ($1,$2,$3)
+	AND name = /*! userName is unknown */
+	AND sex = 'MALE'
+	ORDER BY name DESC`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+}
+
+func TestWithInvalidParamNameOnInFunc(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE id IN /*% in "idList" %*/(1, 2)
+	AND name = /*% p "name" %*/'John Doe'
+	/*%- if .onlyMale %*/
+	AND sex = 'MALE'
+	/*%- end%*/
+	ORDER BY /*% .order %*/id`
+	sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+		"ids":      []int{1, 2, 3},
+		"order":    "name DESC",
+		"onlyMale": true,
+		"name":     "Alex",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users
+	WHERE id IN /*! idList is unknown */
+	AND name = $1
+	AND sex = 'MALE'
+	ORDER BY name DESC`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+}
+
 func singleMap(k string, v interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		k: v,
