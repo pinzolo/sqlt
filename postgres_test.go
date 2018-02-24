@@ -123,7 +123,7 @@ func TestPostgresIn(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN ($1,$2)`
+	WHERE id IN ($1, $2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -152,7 +152,7 @@ func TestPostgresInNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (:ids1,:ids2)`
+	WHERE id IN (:ids1, :ids2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
