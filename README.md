@@ -37,10 +37,11 @@ ORDER BY /*% .order %*/id
 ```go
 // sql is generated SQL from template.
 // vals are arguments for generated SQL.
-sql, vals, err := New(Postgres).Exec(s, sql.Named("ids", []int{1,2,3}), map[string]interface{}{
+sql, vals, err := New(Postgres).Exec(s, map[string]interface{}{
+	"ids":      []int{1, 2, 3},
 	"order":    "name DESC",
-	"onlyMale": false,
-	"name":     "Alex"
+	"onlyMale": true,
+	"name":     "Alex",
 })
 ```
 
