@@ -27,29 +27,24 @@ type context struct {
 	params    []*param
 	namedArgs []sql.NamedArg
 	values    []interface{}
+	paramMap  map[string]interface{}
 }
 
 func newContext(named bool, dialect Dialect, m map[string]interface{}) *context {
-	params := make([]*param, 0)
+	params := make([]*param, len(m))
+	i := 0
 	for k, v := range m {
-		arg := sql.Named(k, v)
-		params = append(params, newParam(arg.Name, arg.Value))
+		params[i] = newParam(k, v)
+		i++
 	}
 	return &context{
 		named:     named,
 		dialect:   dialect,
 		params:    params,
-		namedArgs: make([]sql.NamedArg, 0),
-		values:    make([]interface{}, 0),
+		namedArgs: []sql.NamedArg{},
+		values:    []interface{}{},
+		paramMap:  m,
 	}
-}
-
-func (c *context) parameters() map[string]interface{} {
-	m := make(map[string]interface{})
-	for _, p := range c.params {
-		m[p.name] = p.value
-	}
-	return m
 }
 
 func (c *context) get(name string) *param {
