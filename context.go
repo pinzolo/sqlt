@@ -57,7 +57,7 @@ func (c *context) get(name string) *param {
 	return nil
 }
 
-func (c *context) addNamedArgs(name string, value interface{}) {
+func (c *context) addNamed(name string, value interface{}) {
 	for _, arg := range c.namedArgs {
 		if arg.Name == name {
 			return
@@ -73,7 +73,7 @@ func (c *context) param(name string) string {
 	}
 
 	if c.named {
-		c.addNamedArgs(p.name, p.value)
+		c.addNamed(p.name, p.value)
 		return c.dialect.NamedPlaceholderPrefix() + p.name
 	}
 
