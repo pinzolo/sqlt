@@ -24,7 +24,7 @@ WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
 /*%- if .onlyMale %*/
 AND sex = 'MALE'
-/*%- end%*/
+/*%- end %*/
 ORDER BY /*% .order %*/id
 ```
 
@@ -40,7 +40,7 @@ ORDER BY /*% .order %*/id
 sql, vals, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"ids":      []int{1, 2, 3},
 	"order":    "name DESC",
-	"onlyMale": true,
+	"onlyMale": false,
 	"name":     "Alex",
 })
 ```
