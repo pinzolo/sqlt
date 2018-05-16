@@ -68,7 +68,6 @@ func TestDropSample(t *testing.T) {
 		t.Errorf("dropSample faild: expected %s, but got %s", expected, actual)
 	}
 }
-
 func TestExec(t *testing.T) {
 	s := `SELECT *
 	FROM users
@@ -98,7 +97,7 @@ func TestExec(t *testing.T) {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
 	if len(vals) != 4 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+		t.Errorf("exec failed: values should have 4 length, but got %v", vals)
 	}
 	if isInvalidInt(vals[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", vals)
@@ -142,7 +141,7 @@ func TestExecNamed(t *testing.T) {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
 	if len(vals) != 4 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+		t.Errorf("exec failed: values should have 4 length, but got %v", vals)
 	}
 	if isInvalidIntArg(vals[0], "ids1", 1) {
 		t.Errorf("exec failed: values should have ids1 = 1, but got %v", vals)
@@ -155,6 +154,42 @@ func TestExecNamed(t *testing.T) {
 	}
 	if isInvalidStringArg(vals[3], "name", "Alex") {
 		t.Errorf("exec failed: values should have name = 'Alex', but got %v", vals)
+	}
+}
+
+func TestExecWithNilParams(t *testing.T) {
+	s := `SELECT *
+	FROM users`
+	sql, vals, err := New(Postgres).Exec(s, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(vals) != 0 {
+		t.Errorf("exec failed: values should have 0 length, but got %v", vals)
+	}
+}
+
+func TestExecNamedWithNilParams(t *testing.T) {
+	s := `SELECT *
+	FROM users`
+	sql, vals, err := New(Postgres).ExecNamed(s, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(vals) != 0 {
+		t.Errorf("exec failed: values should have 0 length, but got %v", vals)
 	}
 }
 
