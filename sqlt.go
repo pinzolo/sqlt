@@ -52,6 +52,32 @@ func (st SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, 
 	return s, c.namedArgs, nil
 }
 
+// QueryArgs builds arguments for sql.
+func QueryArgs(s string, vals []interface{}) []interface{} {
+	if len(vals) == 0 {
+		return []interface{}{s}
+	}
+	args := make([]interface{}, len(vals)+1)
+	args[0] = s
+	for i, v := range vals {
+		args[i+1] = v
+	}
+	return args
+}
+
+// QueryArgsNamed builds arguments for sql with named arguments.
+func QueryArgsNamed(s string, vals []sql.NamedArg) []interface{} {
+	if len(vals) == 0 {
+		return []interface{}{s}
+	}
+	args := make([]interface{}, len(vals)+1)
+	args[0] = s
+	for i, v := range vals {
+		args[i+1] = v
+	}
+	return args
+}
+
 func (st SQLTemplate) exec(c *context, text string) (string, error) {
 	t, err := template.New("").Funcs(c.funcMap()).Delims(LeftDelim, RightDelim).Parse(dropSample(text))
 	if err != nil {
