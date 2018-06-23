@@ -43,6 +43,7 @@ sql, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"onlyMale": false,
 	"name":     "Alex",
 })
+rows, err := db.Query(sql, args...)
 ```
 
 ### Generated SQL
