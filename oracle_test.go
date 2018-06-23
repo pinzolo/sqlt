@@ -8,7 +8,7 @@ func TestOracleP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(Oracle).Exec(s, singleMap("id", 1))
+	sql, args, err := New(Oracle).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -19,11 +19,11 @@ func TestOracleP(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidInt(vals[0], 1) {
-		t.Errorf("exec failed: values should have 1, but got %v", vals)
+	if isInvalidInt(args[0], 1) {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestOracleRepeatedP(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(Oracle).Exec(s, singleMap("name", "test"))
+	sql, args, err := New(Oracle).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,11 +46,11 @@ func TestOracleRepeatedP(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidString(vals[0], "test") {
-		t.Errorf("exec failed: values should have 'test', but got %v", vals)
+	if isInvalidString(args[0], "test") {
+		t.Errorf("exec failed: values should have 'test', but got %v", args)
 	}
 }
 
@@ -58,7 +58,7 @@ func TestOraclePNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, vals, err := New(Oracle).ExecNamed(s, singleMap("id", 1))
+	sql, args, err := New(Oracle).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,11 +69,11 @@ func TestOraclePNamed(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidIntArg(vals[0], "id", 1) {
-		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
+	if isInvalidIntArg(args[0], "id", 1) {
+		t.Errorf("exec failed: values should have id = 1, but got %v", args)
 	}
 }
 
@@ -83,7 +83,7 @@ func TestOracleRepeatedPNamed(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, vals, err := New(Oracle).ExecNamed(s, singleMap("name", "test"))
+	sql, args, err := New(Oracle).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -96,11 +96,11 @@ func TestOracleRepeatedPNamed(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidStringArg(vals[0], "name", "test") {
-		t.Errorf("exec failed: values should have name = 'test', but got %v", vals)
+	if isInvalidStringArg(args[0], "name", "test") {
+		t.Errorf("exec failed: values should have name = 'test', but got %v", args)
 	}
 }
 
@@ -108,7 +108,7 @@ func TestOracleIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id  /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Oracle).Exec(s, singleMap("ids", []int{1, 2}))
+	sql, args, err := New(Oracle).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,14 +119,14 @@ func TestOracleIn(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 2 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+	if len(args) != 2 {
+		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
-	if isInvalidInt(vals[0], 1) {
-		t.Errorf("exec failed: values should have 1, but got %v", vals)
+	if isInvalidInt(args[0], 1) {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
 	}
-	if isInvalidInt(vals[1], 2) {
-		t.Errorf("exec failed: values should have 2, but got %v", vals)
+	if isInvalidInt(args[1], 2) {
+		t.Errorf("exec failed: values should have 2, but got %v", args)
 	}
 }
 
@@ -134,7 +134,7 @@ func TestOracleInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id  /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Oracle).ExecNamed(s, singleMap("ids", []int{1, 2}))
+	sql, args, err := New(Oracle).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -145,14 +145,14 @@ func TestOracleInNamed(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 2 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", vals)
+	if len(args) != 2 {
+		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
-	if isInvalidIntArg(vals[0], "ids1", 1) {
-		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
+	if isInvalidIntArg(args[0], "ids1", 1) {
+		t.Errorf("exec failed: values should have id = 1, but got %v", args)
 	}
-	if isInvalidIntArg(vals[1], "ids2", 2) {
-		t.Errorf("exec failed: values should have id = 2, but got %v", vals)
+	if isInvalidIntArg(args[1], "ids2", 2) {
+		t.Errorf("exec failed: values should have id = 2, but got %v", args)
 	}
 }
 
@@ -160,7 +160,7 @@ func TestOracleInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id  /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Oracle).Exec(s, singleMap("ids", 1))
+	sql, args, err := New(Oracle).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -171,11 +171,11 @@ func TestOracleInWithSingleValue(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidInt(vals[0], 1) {
-		t.Errorf("exec failed: values should have 1, but got %v", vals)
+	if isInvalidInt(args[0], 1) {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
 	}
 }
 
@@ -183,7 +183,7 @@ func TestOracleInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id  /*%in "ids" %*/(1, 2)`
-	sql, vals, err := New(Oracle).ExecNamed(s, singleMap("ids", 1))
+	sql, args, err := New(Oracle).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -194,11 +194,11 @@ func TestOracleInNamedWithSingleValue(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidIntArg(vals[0], "ids", 1) {
-		t.Errorf("exec failed: values should have id = 1, but got %v", vals)
+	if isInvalidIntArg(args[0], "ids", 1) {
+		t.Errorf("exec failed: values should have id = 1, but got %v", args)
 	}
 }
 
@@ -210,7 +210,7 @@ func TestOracleOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, vals, err := New(Oracle).Exec(s, map[string]interface{}{
+	sql, args, err := New(Oracle).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -227,10 +227,10 @@ func TestOracleOtherTemplateFeature(t *testing.T) {
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
-	if len(vals) != 1 {
-		t.Errorf("exec failed: values should have 1 length, but got %v", vals)
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
-	if isInvalidInt(vals[0], 1) {
-		t.Errorf("exec failed: values should have 1, but got %v", vals)
+	if isInvalidInt(args[0], 1) {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
 	}
 }

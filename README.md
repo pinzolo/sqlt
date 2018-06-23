@@ -36,8 +36,8 @@ ORDER BY /*% .order %*/id
 
 ```go
 // sql is generated SQL from template.
-// vals are arguments for generated SQL.
-sql, vals, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+// args are arguments for generated SQL.
+sql, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"ids":      []int{1, 2, 3},
 	"order":    "name DESC",
 	"onlyMale": false,
