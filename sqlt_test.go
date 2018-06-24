@@ -3,6 +3,7 @@ package sqlt
 import (
 	"database/sql"
 	"testing"
+	"time"
 )
 
 func BenchmarkExec(b *testing.B) {
@@ -290,6 +291,285 @@ func TestWithInvalidParamNameOnInFunc(t *testing.T) {
 	ORDER BY name DESC`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+}
+
+func TestTime(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% time %*/'2000-01-01'
+	  , /*% time %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    $1
+	  , $2
+	  , $2
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	tm, ok := args[1].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
+	}
+	if !(bt.Unix() <= tm.Unix() && tm.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm)
+	}
+}
+
+func TestTimeNamed(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% time %*/'2000-01-01'
+	  , /*% time %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    :name
+	  , :time__
+	  , :time__
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	arg := args[1]
+	if arg.Name != "time__" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "time__", arg.Name)
+	}
+	tm, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm.Unix() && tm.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm)
+	}
+}
+
+func TestTimeNamedWithNameParam(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% time %*/'2000-01-01'
+	  , /*% time %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    :name
+	  , :time__
+	  , :time__
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	arg := args[1]
+	if arg.Name != "time__" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "time__", arg.Name)
+	}
+	tm, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm.Unix() && tm.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm)
+	}
+}
+
+func TestNow(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% now %*/'2000-01-01'
+	  , /*% now %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    $1
+	  , $2
+	  , $3
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	tm1, ok := args[1].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
+	}
+	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm1)
+	}
+	tm2, ok := args[2].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 3rd arg expected time, but got %t", args[2])
+	}
+	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm2)
+	}
+}
+
+func TestNowNamed(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% now %*/'2000-01-01'
+	  , /*% now %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    :name
+	  , :now__1
+	  , :now__2
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	arg := args[1]
+	if arg.Name != "now__1" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "now__1", arg.Name)
+	}
+	tm1, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm1)
+	}
+	arg = args[2]
+	if arg.Name != "now__2" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "now__2", arg.Name)
+	}
+	tm2, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 3rd arg value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm2)
+	}
+}
+
+func TestNowNamedWithNameParam(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% now %*/'2000-01-01'
+	  , /*% now %*/'2000-01-01'
+	)`
+	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    :name
+	  , :now__1
+	  , :now__2
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	arg := args[1]
+	if arg.Name != "now__1" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "now__1", arg.Name)
+	}
+	tm1, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd args value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm1)
+	}
+	arg = args[2]
+	if arg.Name != "now__2" {
+		t.Errorf("default time arg name shoud be %q, but got %q", "now__2", arg.Name)
+	}
+	tm2, ok := arg.Value.(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 3rd args value expected time, but got %t", arg.Value)
+	}
+	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm2)
 	}
 }
 

@@ -2,6 +2,7 @@ package sqlt
 
 import (
 	"testing"
+	"time"
 )
 
 func TestMySQLP(t *testing.T) {
@@ -234,5 +235,103 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 	}
 	if isInvalidInt(args[0], 1) {
 		t.Errorf("exec failed: values should have 1, but got %v", args)
+	}
+}
+
+func TestMySQLTime(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% time %*/'2000-01-01'
+	  , /*% time %*/'2000-01-01'
+	)`
+	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    ?
+	  , ?
+	  , ?
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	tm1, ok := args[1].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
+	}
+	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm1)
+	}
+	tm2, ok := args[2].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 3rd arg expected time, but got %t", args[2])
+	}
+	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm2)
+	}
+	if tm1 != tm2 {
+		t.Errorf("time should return same time on each calling, but tm1 is %v and tm2 is %v", tm1, tm2)
+	}
+}
+
+func TestMySQLNow(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% now %*/'2000-01-01'
+	  , /*% now %*/'2000-01-01'
+	)`
+	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    ?
+	  , ?
+	  , ?
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	tm1, ok := args[1].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
+	}
+	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm1)
+	}
+	tm2, ok := args[2].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 3rd arg expected time, but got %t", args[2])
+	}
+	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+		t.Errorf("time should be current time, but got %v", tm2)
+	}
+	if tm1 == tm2 {
+		t.Errorf("now should not return same time on each calling")
 	}
 }

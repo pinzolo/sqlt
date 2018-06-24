@@ -77,7 +77,7 @@ ORDER BY name DESC
 $ go get github.com/pinzolo/sqlt
 ```
 
-## Support
+## Suppor
 
 ### Go version
 
