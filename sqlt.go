@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"regexp"
 	"text/template"
+	"time"
 )
 
 const (
@@ -23,6 +24,10 @@ var (
 // SQLTemplate is template struct.
 type SQLTemplate struct {
 	dialect Dialect
+	// TimeFunc used `time` and `now` function in template.
+	// This func should return current time.
+	// If this function is not set, used `time.Now()` as default function.
+	TimeFunc func() time.Time
 }
 
 // New template initialized with dialect.
@@ -33,7 +38,7 @@ func New(dialect Dialect) SQLTemplate {
 // Exec executes given template with given map parameters.
 // This function replaces to normal placeholder.
 func (st SQLTemplate) Exec(text string, m map[string]interface{}) (string, []interface{}, error) {
-	c := newContext(false, st.dialect, m)
+	c := newContext(false, st.dialect, st.TimeFunc, m)
 	s, err := st.exec(c, text)
 	if err != nil {
 		return "", nil, err
@@ -44,7 +49,7 @@ func (st SQLTemplate) Exec(text string, m map[string]interface{}) (string, []int
 // ExecNamed executes given template with given map parameters.
 // This function replaces to named placeholder.
 func (st SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
-	c := newContext(true, st.dialect, m)
+	c := newContext(true, st.dialect, st.TimeFunc, m)
 	s, err := st.exec(c, text)
 	if err != nil {
 		return "", nil, err

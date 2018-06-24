@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 )
 
 type param struct {
@@ -29,14 +30,19 @@ type context struct {
 	namedArgs []sql.NamedArg
 	values    []interface{}
 	paramMap  map[string]interface{}
+	timer     *timer
 }
 
-func newContext(named bool, dialect Dialect, m map[string]interface{}) *context {
+func newContext(named bool, dialect Dialect, timeFn func() time.Time, m map[string]interface{}) *context {
 	params := make([]*param, len(m))
 	i := 0
 	for k, v := range m {
 		params[i] = newParam(k, v)
 		i++
+	}
+	fn := time.Now
+	if timeFn != nil {
+		fn = timeFn
 	}
 	return &context{
 		named:     named,
@@ -45,6 +51,7 @@ func newContext(named bool, dialect Dialect, m map[string]interface{}) *context 
 		namedArgs: []sql.NamedArg{},
 		values:    []interface{}{},
 		paramMap:  m,
+		timer:     newTimer(fn),
 	}
 }
 
@@ -120,11 +127,48 @@ func (c *context) in(name string) string {
 	return "(" + strings.Join(placeholders, ", ") + ")"
 }
 
+func (c *context) time() string {
+	name := "time__"
+	if c.named {
+		c.addNamed(name, c.timer.time())
+		return c.dialect.NamedPlaceholderPrefix() + name
+	}
+
+	if c.dialect.IsOrdinalPlaceholderSupported() {
+		if c.timer.cacheIndex == 0 {
+			c.values = append(c.values, c.timer.time())
+			c.timer.cacheIndex = len(c.values)
+		}
+		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(c.timer.cacheIndex)
+	}
+
+	c.values = append(c.values, c.timer.time())
+	return c.dialect.Placeholder()
+}
+
+func (c *context) now() string {
+	name := "now__" + strconv.Itoa(c.timer.nowCnt)
+	if c.named {
+		c.addNamed(name, c.timer.now())
+		return c.dialect.NamedPlaceholderPrefix() + name
+	}
+
+	if c.dialect.IsOrdinalPlaceholderSupported() {
+		c.values = append(c.values, c.timer.now())
+		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(len(c.values))
+	}
+
+	c.values = append(c.values, c.timer.now())
+	return c.dialect.Placeholder()
+}
+
 func (c *context) funcMap() template.FuncMap {
 	return template.FuncMap{
 		"param": c.param,
 		"p":     c.param,
 		"in":    c.in,
+		"time":  c.time,
+		"now":   c.now,
 	}
 }
 
