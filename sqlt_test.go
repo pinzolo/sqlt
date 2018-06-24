@@ -333,6 +333,49 @@ func TestTime(t *testing.T) {
 	}
 }
 
+func TestTimeWithTimeFunc(t *testing.T) {
+	bt := time.Now()
+	s := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    /*% p "name" %*/'John Doe'
+	  , /*% time %*/'2000-01-01'
+	  , /*% time %*/'2000-01-01'
+	)`
+	st := New(Postgres)
+	st.TimeFunc = func() time.Time {
+		return bt.AddDate(0, 0, 1)
+	}
+	sql, args, err := st.Exec(s, map[string]interface{}{
+		"name": "test",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `INSERT INTO users (
+	    name
+	  , created_at
+	  , updated_at
+	) VALUES (
+	    $1
+	  , $2
+	  , $2
+	)`
+	et := time.Now()
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	tm, ok := args[1].(time.Time)
+	if !ok {
+		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
+	}
+	if tm.Unix() != bt.AddDate(0, 0, 1).Unix() && bt.Unix() <= tm.Unix() && tm.Unix() <= et.Unix() {
+		t.Errorf("time should return by TimeFunc, but got %v", tm)
+	}
+}
+
 func TestTimeNamed(t *testing.T) {
 	bt := time.Now()
 	s := `INSERT INTO users (
