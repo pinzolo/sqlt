@@ -335,3 +335,32 @@ func TestMySQLNow(t *testing.T) {
 		t.Errorf("now should not return same time on each calling")
 	}
 }
+
+func TestMySQLLikeEscape(t *testing.T) {
+	s := `SELECT *
+	FROM items
+	WHERE note1 LIKE /*% infix "note" %*/''
+	OR note2 LIKE /*% prefix "note" %*/''
+	OR note3 LIKE /*% suffix "note" %*/''`
+	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM items
+	WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
+	OR note2 LIKE ? || '%' ESCAPE '\'
+	OR note3 LIKE '%' || ? ESCAPE '\'`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if args[0] != `abc\%def\_ghi％jkl＿mno[pqr\\stu` {
+		t.Errorf("exec failed: escaped value %q is invalid", args[0])
+	}
+}
