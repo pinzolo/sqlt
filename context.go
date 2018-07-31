@@ -99,7 +99,7 @@ func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) s
 			c.values = append(c.values, v)
 			p.index = len(c.values)
 		}
-		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(p.index)
+		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(p.index)
 	}
 	c.values = append(c.values, v)
 	return c.dialect.Placeholder()
@@ -130,7 +130,7 @@ func (c *context) in(name string) string {
 		} else {
 			c.values = append(c.values, sv)
 			if c.dialect.IsOrdinalPlaceholderSupported() {
-				placeholder = c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(len(c.values))
+				placeholder = c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
 			} else {
 				placeholder = c.dialect.Placeholder()
 			}
@@ -152,7 +152,7 @@ func (c *context) time() string {
 			c.values = append(c.values, c.timer.time())
 			c.timer.cacheIndex = len(c.values)
 		}
-		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(c.timer.cacheIndex)
+		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(c.timer.cacheIndex)
 	}
 
 	c.values = append(c.values, c.timer.time())
@@ -168,7 +168,7 @@ func (c *context) now() string {
 
 	if c.dialect.IsOrdinalPlaceholderSupported() {
 		c.values = append(c.values, c.timer.now())
-		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(len(c.values))
+		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
 	}
 
 	c.values = append(c.values, c.timer.now())

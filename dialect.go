@@ -7,7 +7,7 @@ type Dialect interface {
 	IsOrdinalPlaceholderSupported() bool
 	// OrdinalPlaceholderPrefix returns prefix of placeholder.
 	// This is used when IsOrdinalPlaceholderSupported is true in Exec func.
-	OrdinalPlaceHolderPrefix() string
+	OrdinalPlaceholderPrefix() string
 	// Placeholder character.
 	// This is used when IsOrdinalPlaceholderSupported is false.
 	Placeholder() string
@@ -35,7 +35,7 @@ func (p postgres) IsOrdinalPlaceholderSupported() bool {
 	return true
 }
 
-func (p postgres) OrdinalPlaceHolderPrefix() string {
+func (p postgres) OrdinalPlaceholderPrefix() string {
 	return "$"
 }
 
@@ -57,7 +57,7 @@ func (m mysql) IsOrdinalPlaceholderSupported() bool {
 	return false
 }
 
-func (m mysql) OrdinalPlaceHolderPrefix() string {
+func (m mysql) OrdinalPlaceholderPrefix() string {
 	return ""
 }
 
@@ -79,7 +79,7 @@ func (o oracle) IsOrdinalPlaceholderSupported() bool {
 	return true
 }
 
-func (o oracle) OrdinalPlaceHolderPrefix() string {
+func (o oracle) OrdinalPlaceholderPrefix() string {
 	return ":"
 }
 
@@ -101,7 +101,7 @@ func (s sqlserver) IsOrdinalPlaceholderSupported() bool {
 	return true
 }
 
-func (s sqlserver) OrdinalPlaceHolderPrefix() string {
+func (s sqlserver) OrdinalPlaceholderPrefix() string {
 	return "@p"
 }
 
