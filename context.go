@@ -228,6 +228,7 @@ func (c *context) funcMap() template.FuncMap {
 		"prefix": c.prefix,
 		"infix":  c.infix,
 		"suffix": c.suffix,
+		"escape": c.escapeLike,
 	}
 }
 

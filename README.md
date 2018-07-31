@@ -34,7 +34,7 @@ ORDER BY /*% .order %*/id
 * func `in` deploy slice values to parentheses and placeholders.
 * func `time` returns current time and cache it, this func always same time in same template.
 * func `now` returns current time each calling.
-* func `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.
+* func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.
 * If you want customized time in template, you can set `TimeFunc`.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
