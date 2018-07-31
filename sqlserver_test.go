@@ -234,3 +234,32 @@ func TestSQLServerOtherTemplateFeature(t *testing.T) {
 		t.Errorf("exec failed: values should have 1, but got %v", args)
 	}
 }
+
+func TestSQLServerLikeEscape(t *testing.T) {
+	s := `SELECT *
+	FROM items
+	WHERE note1 LIKE /*% infix "note" %*/''
+	OR note2 LIKE /*% prefix "note" %*/''
+	OR note3 LIKE /*% suffix "note" %*/''`
+	sql, args, err := New(SQLServer).Exec(s, map[string]interface{}{
+		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM items
+	WHERE note1 LIKE '%' || @p1 || '%' ESCAPE '\'
+	OR note2 LIKE @p1 || '%' ESCAPE '\'
+	OR note3 LIKE '%' || @p1 ESCAPE '\'`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
+	}
+	if args[0] != `abc\%def\_ghi％jkl＿mno\[pqr\\stu` {
+		t.Errorf("exec failed: escaped value %q is invalid", args[0])
+	}
+}

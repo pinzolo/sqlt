@@ -14,6 +14,8 @@ type Dialect interface {
 	// NamedPlaceholderPrefix returns prefix of placeholder.
 	// This is used in ExecNamed func.
 	NamedPlaceholderPrefix() string
+	// WildcardRunes are wildcard characters that are used with `LIKE`.
+	WildcardRunes() []rune
 }
 
 var (
@@ -45,6 +47,10 @@ func (p postgres) NamedPlaceholderPrefix() string {
 	return ":"
 }
 
+func (p postgres) WildcardRunes() []rune {
+	return []rune{'%', '_'}
+}
+
 type mysql struct{}
 
 func (m mysql) IsOrdinalPlaceholderSupported() bool {
@@ -61,6 +67,10 @@ func (m mysql) Placeholder() string {
 
 func (m mysql) NamedPlaceholderPrefix() string {
 	return ":"
+}
+
+func (m mysql) WildcardRunes() []rune {
+	return []rune{'%', '_'}
 }
 
 type oracle struct{}
@@ -81,6 +91,10 @@ func (o oracle) NamedPlaceholderPrefix() string {
 	return ":"
 }
 
+func (o oracle) WildcardRunes() []rune {
+	return []rune{'%', '_', '％', '＿'}
+}
+
 type sqlserver struct{}
 
 func (s sqlserver) IsOrdinalPlaceholderSupported() bool {
@@ -97,4 +111,8 @@ func (s sqlserver) Placeholder() string {
 
 func (s sqlserver) NamedPlaceholderPrefix() string {
 	return "@"
+}
+
+func (s sqlserver) WildcardRunes() []rune {
+	return []rune{'%', '_', '['}
 }

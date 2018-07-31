@@ -10,6 +10,11 @@ import (
 	"time"
 )
 
+const (
+	escapeChar   = '\\'
+	escapePhrase = " ESCAPE '" + string(escapeChar) + "'"
+)
+
 type param struct {
 	name  string
 	value interface{}
@@ -73,27 +78,35 @@ func (c *context) addNamed(name string, value interface{}) {
 	c.namedArgs = append(c.namedArgs, sql.Named(name, value))
 }
 
-func (c *context) param(name string) string {
+func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) string {
 	p := c.get(name)
 	if p == nil {
 		return unknownParamOutput(name)
 	}
 
+	v := p.value
+	if fn != nil {
+		v = fn(v)
+	}
+
 	if c.named {
-		c.addNamed(p.name, p.value)
+		c.addNamed(p.name, v)
 		return c.dialect.NamedPlaceholderPrefix() + p.name
 	}
 
 	if c.dialect.IsOrdinalPlaceholderSupported() {
 		if p.index == 0 {
-			c.values = append(c.values, p.value)
+			c.values = append(c.values, v)
 			p.index = len(c.values)
 		}
 		return c.dialect.OrdinalPlaceHolderPrefix() + strconv.Itoa(p.index)
 	}
-
-	c.values = append(c.values, p.value)
+	c.values = append(c.values, v)
 	return c.dialect.Placeholder()
+}
+
+func (c *context) param(name string) string {
+	return c.paramWithFunc(name, nil)
 }
 
 func (c *context) in(name string) string {
@@ -162,13 +175,57 @@ func (c *context) now() string {
 	return c.dialect.Placeholder()
 }
 
+func (c *context) prefix(name string) string {
+	return c.paramWithEscapeLike(name) + " || '%'" + escapePhrase
+}
+
+func (c *context) infix(name string) string {
+	return "'%' || " + c.paramWithEscapeLike(name) + " || '%'" + escapePhrase
+}
+
+func (c *context) suffix(name string) string {
+	return "'%' || " + c.paramWithEscapeLike(name) + escapePhrase
+
+}
+
+func (c *context) paramWithEscapeLike(name string) string {
+	return c.paramWithFunc(name, c.escapeLike)
+}
+
+func (c *context) escapeLike(i interface{}) interface{} {
+	s, ok := i.(string)
+	if !ok {
+		return i
+	}
+
+	rs := []rune(s)
+	v := make([]rune, 0)
+	for _, r := range rs {
+		match := false
+		for _, w := range c.dialect.WildcardRunes() {
+			if r == w || r == escapeChar {
+				match = true
+				break
+			}
+		}
+		if match {
+			v = append(v, escapeChar)
+		}
+		v = append(v, r)
+	}
+	return string(v)
+}
+
 func (c *context) funcMap() template.FuncMap {
 	return template.FuncMap{
-		"param": c.param,
-		"p":     c.param,
-		"in":    c.in,
-		"time":  c.time,
-		"now":   c.now,
+		"param":  c.param,
+		"p":      c.param,
+		"in":     c.in,
+		"time":   c.time,
+		"now":    c.now,
+		"prefix": c.prefix,
+		"infix":  c.infix,
+		"suffix": c.suffix,
 	}
 }
 
