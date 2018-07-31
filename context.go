@@ -12,7 +12,7 @@ import (
 
 const (
 	escapeChar   = '\\'
-	escapePhrase = " ESCAPE '" + string(escapeChar) + "'"
+	escapeClause = " ESCAPE '" + string(escapeChar) + "'"
 )
 
 type param struct {
@@ -176,15 +176,15 @@ func (c *context) now() string {
 }
 
 func (c *context) prefix(name string) string {
-	return c.paramWithEscapeLike(name) + " || '%'" + escapePhrase
+	return c.paramWithEscapeLike(name) + " || '%'" + escapeClause
 }
 
 func (c *context) infix(name string) string {
-	return "'%' || " + c.paramWithEscapeLike(name) + " || '%'" + escapePhrase
+	return "'%' || " + c.paramWithEscapeLike(name) + " || '%'" + escapeClause
 }
 
 func (c *context) suffix(name string) string {
-	return "'%' || " + c.paramWithEscapeLike(name) + escapePhrase
+	return "'%' || " + c.paramWithEscapeLike(name) + escapeClause
 
 }
 
