@@ -201,19 +201,21 @@ func (c *context) escapeLike(i interface{}) interface{} {
 	rs := []rune(s)
 	v := make([]rune, 0)
 	for _, r := range rs {
-		match := false
-		for _, w := range c.dialect.WildcardRunes() {
-			if r == w || r == escapeChar {
-				match = true
-				break
-			}
-		}
-		if match {
+		if c.isEscapee(r) {
 			v = append(v, escapeChar)
 		}
 		v = append(v, r)
 	}
 	return string(v)
+}
+
+func (c *context) isEscapee(r rune) bool {
+	for _, w := range c.dialect.WildcardRunes() {
+		if r == w || r == escapeChar {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *context) funcMap() template.FuncMap {
