@@ -28,11 +28,27 @@ type SQLTemplate struct {
 	// This func should return current time.
 	// If this function is not set, used `time.Now()` as default function.
 	TimeFunc func() time.Time
+	// CustomFuncs are custom functions that are used in template.
+	CustomFuncs map[string]interface{}
 }
 
 // New template initialized with dialect.
 func New(dialect Dialect) SQLTemplate {
-	return SQLTemplate{dialect: dialect}
+	return SQLTemplate{dialect: dialect, CustomFuncs: make(map[string]interface{})}
+}
+
+// AddFunc add custom tempalte func.
+func (st SQLTemplate) AddFunc(name string, fn interface{}) SQLTemplate {
+	st.CustomFuncs[name] = fn
+	return st
+}
+
+// AddFuncs add custom template functions.
+func (st SQLTemplate) AddFuncs(funcs map[string]interface{}) SQLTemplate {
+	for k, v := range funcs {
+		st.CustomFuncs[k] = v
+	}
+	return st
 }
 
 // Exec executes given template with given map parameters.
@@ -58,7 +74,7 @@ func (st SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, 
 }
 
 func (st SQLTemplate) exec(c *context, text string) (string, error) {
-	t, err := template.New("").Funcs(c.funcMap()).Delims(LeftDelim, RightDelim).Parse(dropSample(text))
+	t, err := template.New("").Funcs(c.funcMap(st.CustomFuncs)).Delims(LeftDelim, RightDelim).Parse(dropSample(text))
 	if err != nil {
 		return "", err
 	}

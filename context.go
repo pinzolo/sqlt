@@ -218,18 +218,18 @@ func (c *context) isEscapee(r rune) bool {
 	return false
 }
 
-func (c *context) funcMap() template.FuncMap {
-	return template.FuncMap{
-		"param":  c.param,
-		"p":      c.param,
-		"in":     c.in,
-		"time":   c.time,
-		"now":    c.now,
-		"prefix": c.prefix,
-		"infix":  c.infix,
-		"suffix": c.suffix,
-		"escape": c.escapeLike,
-	}
+func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
+	fm := template.FuncMap(funcs)
+	fm["param"] = c.param
+	fm["p"] = c.param
+	fm["in"] = c.in
+	fm["time"] = c.time
+	fm["now"] = c.now
+	fm["prefix"] = c.prefix
+	fm["infix"] = c.infix
+	fm["suffix"] = c.suffix
+	fm["escape"] = c.escapeLike
+	return fm
 }
 
 func unknownParamOutput(name string) string {

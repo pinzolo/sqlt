@@ -2,6 +2,7 @@ package sqlt
 
 import (
 	"database/sql"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -613,6 +614,71 @@ func TestNowNamedWithNameParam(t *testing.T) {
 	}
 	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
 		t.Errorf("time should be current time, but got %v", tm2)
+	}
+}
+
+func TestCustomFuncs(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE name LIKE /*% infix "name" %*/''
+	/*% paging 3 50 %*/`
+	sql, args, err := New(Postgres).AddFuncs(map[string]interface{}{
+		"paging": func(offset, limit int) string {
+			return fmt.Sprintf("OFFSET %d LIMIT %d", offset, limit)
+		},
+		"infix": func() {
+			panic("should not called")
+		},
+	}).Exec(s, map[string]interface{}{
+		"name": "Alex",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users
+	WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
+	OFFSET 3 LIMIT 50`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
+	}
+	if args[0] != `Alex` {
+		t.Error("exec failed: embeded function should not be overwritten")
+	}
+}
+
+func TestCustomFuncsContinuous(t *testing.T) {
+	s := `SELECT *
+	FROM users
+	WHERE name LIKE /*% infix "name" %*/''
+	/*% paging 3 50 %*/`
+	sql, args, err := New(Postgres).AddFunc("paging", func(offset, limit int) string {
+		return fmt.Sprintf("OFFSET %d LIMIT %d", offset, limit)
+	}).AddFunc("infix", func() {
+		panic("should not called")
+	}).Exec(s, map[string]interface{}{
+		"name": "Alex",
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+	FROM users
+	WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
+	OFFSET 3 LIMIT 50`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 1 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
+	}
+	if args[0] != `Alex` {
+		t.Error("exec failed: embeded function should not be overwritten")
 	}
 }
 
