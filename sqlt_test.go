@@ -136,7 +136,7 @@ func TestExecNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (:ids1, :ids2, :ids3)
+	WHERE id IN (:ids__1, :ids__2, :ids__3)
 	AND name = :name
 	ORDER BY name DESC`
 	if eSQL != sql {
@@ -145,14 +145,14 @@ func TestExecNamed(t *testing.T) {
 	if len(args) != 4 {
 		t.Errorf("exec failed: values should have 4 length, but got %v", args)
 	}
-	if isInvalidIntArg(args[0], "ids1", 1) {
-		t.Errorf("exec failed: values should have ids1 = 1, but got %v", args)
+	if isInvalidIntArg(args[0], "ids__1", 1) {
+		t.Errorf("exec failed: values should have ids__1 = 1, but got %v", args)
 	}
-	if isInvalidIntArg(args[1], "ids2", 2) {
-		t.Errorf("exec failed: values should have ids2 = 2, but got %v", args)
+	if isInvalidIntArg(args[1], "ids__2", 2) {
+		t.Errorf("exec failed: values should have ids__2 = 2, but got %v", args)
 	}
-	if isInvalidIntArg(args[2], "ids3", 3) {
-		t.Errorf("exec failed: values should have ids3 = 3, but got %v", args)
+	if isInvalidIntArg(args[2], "ids__3", 3) {
+		t.Errorf("exec failed: values should have ids__3 = 3, but got %v", args)
 	}
 	if isInvalidStringArg(args[3], "name", "Alex") {
 		t.Errorf("exec failed: values should have name = 'Alex', but got %v", args)

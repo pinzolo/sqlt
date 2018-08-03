@@ -125,8 +125,9 @@ func (c *context) in(name string) string {
 		sv := v.Index(i).Interface()
 		var placeholder string
 		if c.named {
-			placeholder = c.dialect.NamedPlaceholderPrefix() + name + strconv.Itoa(i+1)
-			c.namedArgs = append(c.namedArgs, sql.Named(name+strconv.Itoa(i+1), sv))
+			argName := fmt.Sprintf("%s__%d", name, i+1)
+			placeholder = c.dialect.NamedPlaceholderPrefix() + argName
+			c.namedArgs = append(c.namedArgs, sql.Named(argName, sv))
 		} else {
 			c.values = append(c.values, sv)
 			if c.dialect.IsOrdinalPlaceholderSupported() {
