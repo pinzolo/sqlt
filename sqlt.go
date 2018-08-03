@@ -55,31 +55,31 @@ func (st SQLTemplate) AddFuncs(funcs map[string]interface{}) SQLTemplate {
 // This function replaces to normal placeholder.
 func (st SQLTemplate) Exec(text string, m map[string]interface{}) (string, []interface{}, error) {
 	c := newContext(false, st.dialect, st.TimeFunc, m)
-	s, err := st.exec(c, text)
+	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
 	}
-	return s, c.values, nil
+	return s, c.Args(), nil
 }
 
 // ExecNamed executes given template with given map parameters.
 // This function replaces to named placeholder.
 func (st SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
 	c := newContext(true, st.dialect, st.TimeFunc, m)
-	s, err := st.exec(c, text)
+	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
 	}
-	return s, c.namedArgs, nil
+	return s, c.NamedArgs(), nil
 }
 
-func (st SQLTemplate) exec(c *context, text string) (string, error) {
+func (st SQLTemplate) exec(c *context, text string, m map[string]interface{}) (string, error) {
 	t, err := template.New("").Funcs(c.funcMap(st.CustomFuncs)).Delims(LeftDelim, RightDelim).Parse(dropSample(text))
 	if err != nil {
 		return "", err
 	}
 	buf := &bytes.Buffer{}
-	if err = t.Execute(buf, c.paramMap); err != nil {
+	if err = t.Execute(buf, m); err != nil {
 		return "", err
 	}
 	return buf.String(), nil
