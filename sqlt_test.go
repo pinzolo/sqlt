@@ -295,6 +295,66 @@ func TestWithInvalidParamNameOnInFunc(t *testing.T) {
 	}
 }
 
+func TestContinuousIn(t *testing.T) {
+	s := `SELECT *
+FROM users
+WHERE name IN /*% in "keywords" %*/('')
+OR email IN /*% in "keywords" %*/('')`
+	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+		"keywords": []string{"foo", "bar"},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+FROM users
+WHERE name IN ($1, $2)
+OR email IN ($1, $2)`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 2 {
+		t.Errorf("exec failed: values should have 2 length, but got %v", args)
+	}
+	if isInvalidString(args[0], "foo") {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
+	}
+	if isInvalidString(args[1], "bar") {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
+	}
+}
+
+func TestContinuousInNamed(t *testing.T) {
+	s := `SELECT *
+FROM users
+WHERE name IN /*% in "keywords" %*/('')
+OR email IN /*% in "keywords" %*/('')`
+	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		"keywords": []string{"foo", "bar"},
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `SELECT *
+FROM users
+WHERE name IN (:keywords__1, :keywords__2)
+OR email IN (:keywords__1, :keywords__2)`
+	if eSQL != sql {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	}
+	if len(args) != 2 {
+		t.Errorf("exec failed: values should have 2 length, but got %v", args)
+	}
+	if isInvalidStringArg(args[0], "keywords__1", "foo") {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
+	}
+	if isInvalidStringArg(args[1], "keywords__2", "bar") {
+		t.Errorf("exec failed: values should have 1, but got %v", args)
+	}
+}
+
 func TestTime(t *testing.T) {
 	bt := time.Now()
 	s := `INSERT INTO users (

@@ -120,6 +120,7 @@ func (c *context) in(name string) string {
 		return "(" + c.param(name) + ")"
 	}
 
+	startIndex := 0
 	placeholders := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		sv := v.Index(i).Interface()
@@ -127,16 +128,28 @@ func (c *context) in(name string) string {
 		if c.named {
 			argName := fmt.Sprintf("%s__%d", name, i+1)
 			placeholder = c.dialect.NamedPlaceholderPrefix() + argName
-			c.namedArgs = append(c.namedArgs, sql.Named(argName, sv))
+			c.addNamed(argName, sv)
 		} else {
-			c.values = append(c.values, sv)
 			if c.dialect.IsOrdinalPlaceholderSupported() {
-				placeholder = c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
+				if p.index == 0 {
+					c.values = append(c.values, sv)
+					if startIndex == 0 {
+						startIndex = len(c.values)
+					}
+					placeholder = c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
+				} else {
+					placeholder = c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(p.index+i)
+				}
 			} else {
+				c.values = append(c.values, sv)
 				placeholder = c.dialect.Placeholder()
 			}
 		}
 		placeholders[i] = placeholder
+	}
+	if startIndex != 0 {
+		fmt.Println(startIndex)
+		p.index = startIndex
 	}
 	return "(" + strings.Join(placeholders, ", ") + ")"
 }
