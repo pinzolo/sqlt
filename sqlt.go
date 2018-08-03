@@ -17,7 +17,7 @@ const (
 
 var (
 	strRegex = regexp.MustCompile(`%\*/'[^']*'`)
-	inRegex  = regexp.MustCompile(`%\*/\([^\(\)]*\)`)
+	inRegex  = regexp.MustCompile(`%\*/\([^()]*\)`)
 	valRegex = regexp.MustCompile(`%\*/\S*`)
 )
 
