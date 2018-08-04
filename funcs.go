@@ -3,7 +3,6 @@ package sqlt
 import (
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -46,7 +45,7 @@ func (c *context) in(name string) string {
 	placeholders := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		sv := v.Index(i).Interface()
-		argName := fmt.Sprintf("%s__%d", name, i+1)
+		argName := fmt.Sprintf("%s%s%d", name, Connector, i+1)
 		if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
 			c.MergeArg(argName, sv)
 		} else {
@@ -58,7 +57,7 @@ func (c *context) in(name string) string {
 }
 
 func (c *context) time() string {
-	name := "time__"
+	name := "time" + Connector
 	tm := c.timer.time()
 	if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
 		c.MergeArg(name, tm)
@@ -70,7 +69,7 @@ func (c *context) time() string {
 }
 
 func (c *context) now() string {
-	name := "now__" + strconv.Itoa(c.timer.nowCnt)
+	name := fmt.Sprintf("now%s%d", Connector, c.timer.nowCnt)
 	c.AddArg(name, c.timer.now())
 	return c.Placeholder(name)
 }
@@ -94,7 +93,7 @@ func (c *context) paramWithEscapeLike(name string) string {
 		if nv == v {
 			return name, v
 		}
-		return name + "__esc", nv
+		return name + Connector + "esc", nv
 	})
 }
 

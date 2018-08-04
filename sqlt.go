@@ -13,6 +13,8 @@ const (
 	LeftDelim = "/*%"
 	// RightDelim is end delimiter for SQL template.
 	RightDelim = "%*/"
+	// Connector is delimiter that is used when `sqlt` makes original argument name.
+	Connector = "__"
 )
 
 var (

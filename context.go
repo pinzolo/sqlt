@@ -90,7 +90,7 @@ func (c *context) Dig(names []string) (*param, error) {
 			}
 		}
 	}
-	return newParam(strings.Join(names, "__"), v.Interface()), nil
+	return newParam(strings.Join(names, Connector), v.Interface()), nil
 }
 
 func findValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
