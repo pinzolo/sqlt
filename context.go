@@ -93,6 +93,58 @@ func (c *context) Dig(names []string) (*param, error) {
 	return newParam(strings.Join(names, "__"), v.Interface()), nil
 }
 
+func findValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// cannot find field from pointer or interface, but can find method from those.
+	// so at first search method.
+	v, err := findMethodValue(val, name, prefix)
+	if err != nil {
+		return v, err
+	}
+	if v.IsValid() {
+		return v, nil
+	}
+
+	return findFieldValue(val, name, prefix)
+}
+
+func findMethodValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// Finding method raises panic when Interface and nil.
+	if val.Kind() == reflect.Interface && val.IsNil() {
+		return val, fmt.Errorf("nil value: %s", prefix)
+	}
+
+	v := val.MethodByName(name)
+	qname := prefix + "." + name
+	if !v.IsValid() {
+		return v, nil
+	}
+	t := v.Type()
+	if t.NumIn() != 0 || t.NumOut() != 1 {
+		return v, fmt.Errorf("invalid method: %s", qname)
+	}
+	v = v.Call([]reflect.Value{})[0]
+	return v, nil
+}
+
+func findFieldValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// When value is pointer or interface, must call `Elem()` recursively.
+	if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
+		return findFieldValue(val.Elem(), name, prefix)
+	}
+
+	// Finding field raises panic when not struct
+	if val.Kind() != reflect.Struct {
+		return val, fmt.Errorf("not struct: %s", prefix)
+	}
+
+	v := val.FieldByName(name)
+	qname := prefix + "." + name
+	if !v.IsValid() {
+		return v, fmt.Errorf("unknown param: %s", qname)
+	}
+	return v, nil
+}
+
 func (c *context) AddArg(name string, value interface{}) {
 	c.args = append(c.args, newParam(name, value))
 }
@@ -144,59 +196,4 @@ func (c *context) Placeholder(name string) string {
 func (c *context) errorOutput(err error) string {
 	c.err = err
 	return fmt.Sprintf("/*! %s */", err.Error())
-}
-
-func findValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
-	// cannot find field from pointer or interface, but can find method from those.
-	// so at first search method.
-	v, err := findMethodValue(val, name, prefix)
-	if err != nil {
-		return v, err
-	}
-	if v.IsValid() {
-		return v, nil
-	}
-
-	return findFieldValue(val, name, prefix)
-}
-
-func findMethodValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
-	// Finding method raises panic when Interface and nil.
-	if val.Kind() == reflect.Interface && val.IsNil() {
-		return val, fmt.Errorf("nil value: %s", prefix)
-	}
-
-	v := val.MethodByName(name)
-	qname := prefix + "." + name
-	if !v.IsValid() {
-		return v, nil
-	}
-	t := v.Type()
-	if t.NumIn() != 0 || t.NumOut() != 1 {
-		return v, fmt.Errorf("invalid method: %s", qname)
-	}
-	v = v.Call([]reflect.Value{})[0]
-	return v, nil
-}
-
-func findFieldValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
-	// When value is pointer or interface, must call `Elem()` recursively.
-	if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
-		if val.IsNil() {
-			return val, fmt.Errorf("nil value: %s", prefix)
-		}
-		return findFieldValue(val.Elem(), name, prefix)
-	}
-
-	// Finding field raises panic when not struct
-	if val.Kind() != reflect.Struct {
-		return val, fmt.Errorf("not struct: %s", prefix)
-	}
-
-	v := val.FieldByName(name)
-	qname := prefix + "." + name
-	if !v.IsValid() {
-		return v, fmt.Errorf("unknown param: %s", qname)
-	}
-	return v, nil
 }
