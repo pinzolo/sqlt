@@ -1,4 +1,4 @@
-package sqlt
+package sqlt_test
 
 import (
 	"database/sql"
@@ -6,26 +6,28 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pinzolo/sqlt"
 	"github.com/pinzolo/tagt"
 )
 
 func BenchmarkExec(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		s := `SELECT *
-		FROM users
-		WHERE id = /*%p "id" %*/1
-		AND name = /*% p "name" %*/'John Doe'
-		/*%- if .onlyMale %*/
-		AND sex = 'MALE'
-		/*%- end%*/
-		ORDER BY /*% .order %*/id`
+		s := `
+SELECT *
+FROM users
+WHERE id = /*%p "id" %*/1
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
 		m := map[string]interface{}{
 			"id":       1,
 			"order":    "name DESC",
 			"onlyMale": true,
 			"name":     "Alex",
 		}
-		_, _, err := New(Postgres).Exec(s, m)
+		_, _, err := sqlt.New(sqlt.Postgres).Exec(s, m)
 		if err != nil {
 			b.Error(err)
 		}
@@ -34,54 +36,39 @@ func BenchmarkExec(b *testing.B) {
 
 func BenchmarkExecNamed(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		s := `SELECT *
-		FROM users
-		WHERE id = /*%p "id" %*/1
-		AND name = /*% p "name" %*/'John Doe'
-		/*%- if .onlyMale %*/
-		AND sex = 'MALE'
-		/*%- end%*/
-		ORDER BY /*% .order %*/id`
+		s := `
+SELECT *
+FROM users
+WHERE id = /*%p "id" %*/1
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
 		m := map[string]interface{}{
 			"id":       1,
 			"order":    "name DESC",
 			"onlyMale": true,
 			"name":     "Alex",
 		}
-		_, _, err := New(Postgres).ExecNamed(s, m)
+		_, _, err := sqlt.New(sqlt.Postgres).ExecNamed(s, m)
 		if err != nil {
 			b.Error(err)
 		}
 	}
 }
 
-func TestDropSample(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2, 3)
-	AND created_at = /*%p "time"%*/'2000-01-01 12:34:56'
-	AND name = /*%p "name"%*/'foo'
-	AND age = /*%p "age"%*/18`
-	expected := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/
-	AND created_at = /*%p "time"%*/
-	AND name = /*%p "name"%*/
-	AND age = /*%p "age"%*/`
-	if actual := dropSample(s); actual != expected {
-		t.Errorf("dropSample faild: expected %s, but got %s", expected, actual)
-	}
-}
 func TestExec(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "ids" %*/(1, 2)
-	AND name = /*% p "name" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -91,14 +78,15 @@ func TestExec(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN ($1, $2, $3)
-	AND name = $4
-	AND sex = 'MALE'
-	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN ($1, $2, $3)
+AND name = $4
+AND sex = 'MALE'
+ORDER BY name DESC`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 4 {
 		t.Errorf("exec failed: values should have 4 length, but got %v", args)
@@ -118,15 +106,16 @@ func TestExec(t *testing.T) {
 }
 
 func TestExecNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "ids" %*/(1, 2)
-	AND name = /*% p "name" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": false,
@@ -136,13 +125,14 @@ func TestExecNamed(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (:ids__1, :ids__2, :ids__3)
-	AND name = :name
-	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN (:ids__1, :ids__2, :ids__3)
+AND name = :name
+ORDER BY name DESC`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 4 {
 		t.Errorf("exec failed: values should have 4 length, but got %v", args)
@@ -162,17 +152,15 @@ func TestExecNamed(t *testing.T) {
 }
 
 func TestExecWithNilParams(t *testing.T) {
-	s := `SELECT *
-	FROM users`
-	sql, args, err := New(Postgres).Exec(s, nil)
+	s := `SELECT * FROM users`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `SELECT * FROM users`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 0 {
 		t.Errorf("exec failed: values should have 0 length, but got %v", args)
@@ -180,17 +168,15 @@ func TestExecWithNilParams(t *testing.T) {
 }
 
 func TestExecNamedWithNilParams(t *testing.T) {
-	s := `SELECT *
-	FROM users`
-	sql, args, err := New(Postgres).ExecNamed(s, nil)
+	s := `SELECT * FROM users`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `SELECT * FROM users`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 0 {
 		t.Errorf("exec failed: values should have 0 length, but got %v", args)
@@ -198,15 +184,16 @@ func TestExecNamedWithNilParams(t *testing.T) {
 }
 
 func TestExecWithInvalidTemplate(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "ids" %*/(1, 2)
-	AND name = /*% pp "name" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	_, _, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% pp "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -218,15 +205,16 @@ func TestExecWithInvalidTemplate(t *testing.T) {
 }
 
 func TestExecNamedWithInvalidTemplate(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "ids" %*/(1, 2)
-	AND name = /*% pp "name" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	_, _, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% pp "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	_, _, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -238,15 +226,16 @@ func TestExecNamedWithInvalidTemplate(t *testing.T) {
 }
 
 func TestWithInvalidParamNameOnParamFunc(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "ids" %*/(1, 2)
-	AND name = /*% p "userName" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(1, 2)
+AND name = /*% p "userName" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -256,27 +245,29 @@ func TestWithInvalidParamNameOnParamFunc(t *testing.T) {
 		t.Errorf("exec failed: should raise error when unknown param")
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN ($1, $2, $3)
-	AND name = /*! unknown param: userName */
-	AND sex = 'MALE'
-	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN ($1, $2, $3)
+AND name = /*! unknown param: userName */
+AND sex = 'MALE'
+ORDER BY name DESC`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 }
 
 func TestWithInvalidParamNameOnInFunc(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*% in "idList" %*/(1, 2)
-	AND name = /*% p "name" %*/'John Doe'
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
-	sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "idList" %*/(1, 2)
+AND name = /*% p "name" %*/'John Doe'
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
+	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -286,65 +277,70 @@ func TestWithInvalidParamNameOnInFunc(t *testing.T) {
 		t.Errorf("exec failed: should raise error when unknown param")
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN /*! unknown param: idList */
-	AND name = $1
-	AND sex = 'MALE'
-	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN /*! unknown param: idList */
+AND name = $1
+AND sex = 'MALE'
+ORDER BY name DESC`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 }
 
 func TestContinuousIn(t *testing.T) {
-	s := `SELECT *
+	s := `
+SELECT *
 FROM users
 WHERE name IN /*% in "keywords" %*/('')
 OR email IN /*% in "keywords" %*/('')`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"keywords": []string{"foo", "bar"},
 	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
+	eSQL := `
+SELECT *
 FROM users
 WHERE name IN ($1, $2)
 OR email IN ($1, $2)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
 	if isInvalidString(args[0], "foo") {
-		t.Errorf("exec failed: values should have 1, but got %v", args)
+		t.Errorf("exec failed: values should have %q, but got %v", "foo", args)
 	}
 	if isInvalidString(args[1], "bar") {
-		t.Errorf("exec failed: values should have 1, but got %v", args)
+		t.Errorf("exec failed: values should have %q, but got %v", "bar", args)
 	}
 }
 
 func TestContinuousInNamed(t *testing.T) {
-	s := `SELECT *
+	s := `
+SELECT *
 FROM users
 WHERE name IN /*% in "keywords" %*/('')
 OR email IN /*% in "keywords" %*/('')`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"keywords": []string{"foo", "bar"},
 	})
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
+	eSQL := `
+SELECT *
 FROM users
 WHERE name IN (:keywords__1, :keywords__2)
 OR email IN (:keywords__1, :keywords__2)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -359,33 +355,35 @@ OR email IN (:keywords__1, :keywords__2)`
 
 func TestTime(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% time %*/'2000-01-01'
-	  , /*% time %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% time %*/'2000-01-01'
+  , /*% time %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    $1
-	  , $2
-	  , $2
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	$1
+  , $2
+  , $2
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	tm, ok := args[1].(time.Time)
 	if !ok {
@@ -398,37 +396,39 @@ func TestTime(t *testing.T) {
 
 func TestTimeWithTimeFunc(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% time %*/'2000-01-01'
-	  , /*% time %*/'2000-01-01'
-	)`
-	st := New(Postgres)
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% time %*/'2000-01-01'
+  , /*% time %*/'2000-01-01'
+)`
+	st := sqlt.New(sqlt.Postgres)
 	st.TimeFunc = func() time.Time {
 		return bt.AddDate(0, 0, 1)
 	}
-	sql, args, err := st.Exec(s, map[string]interface{}{
+	query, args, err := st.Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    $1
-	  , $2
-	  , $2
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	$1
+  , $2
+  , $2
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	tm, ok := args[1].(time.Time)
 	if !ok {
@@ -441,33 +441,35 @@ func TestTimeWithTimeFunc(t *testing.T) {
 
 func TestTimeNamed(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% time %*/'2000-01-01'
-	  , /*% time %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% time %*/'2000-01-01'
+  , /*% time %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    :name
-	  , :time__
-	  , :time__
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	:name
+  , :time__
+  , :time__
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	arg := args[1]
 	if arg.Name != "time__" {
@@ -484,33 +486,35 @@ func TestTimeNamed(t *testing.T) {
 
 func TestTimeNamedWithNameParam(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% time %*/'2000-01-01'
-	  , /*% time %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% time %*/'2000-01-01'
+  , /*% time %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    :name
-	  , :time__
-	  , :time__
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	:name
+  , :time__
+  , :time__
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	arg := args[1]
 	if arg.Name != "time__" {
@@ -527,33 +531,35 @@ func TestTimeNamedWithNameParam(t *testing.T) {
 
 func TestNow(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% now %*/'2000-01-01'
-	  , /*% now %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% now %*/'2000-01-01'
+  , /*% now %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    $1
-	  , $2
-	  , $3
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	$1
+  , $2
+  , $3
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	tm1, ok := args[1].(time.Time)
 	if !ok {
@@ -573,33 +579,35 @@ func TestNow(t *testing.T) {
 
 func TestNowNamed(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% now %*/'2000-01-01'
-	  , /*% now %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% now %*/'2000-01-01'
+  , /*% now %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    :name
-	  , :now__1
-	  , :now__2
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	:name
+  , :now__1
+  , :now__2
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	arg := args[1]
 	if arg.Name != "now__1" {
@@ -627,33 +635,35 @@ func TestNowNamed(t *testing.T) {
 
 func TestNowNamedWithNameParam(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% now %*/'2000-01-01'
-	  , /*% now %*/'2000-01-01'
-	)`
-	sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% now %*/'2000-01-01'
+  , /*% now %*/'2000-01-01'
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    :name
-	  , :now__1
-	  , :now__2
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	:name
+  , :now__1
+  , :now__2
+)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	arg := args[1]
 	if arg.Name != "now__1" {
@@ -680,11 +690,12 @@ func TestNowNamedWithNameParam(t *testing.T) {
 }
 
 func TestCustomFuncs(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE name LIKE /*% infix "name" %*/''
-	/*% paging 3 50 %*/`
-	sql, args, err := New(Postgres).AddFuncs(map[string]interface{}{
+	s := `
+SELECT *
+FROM users
+WHERE name LIKE /*% infix "name" %*/''
+/*% paging 3 50 %*/`
+	query, args, err := sqlt.New(sqlt.Postgres).AddFuncs(map[string]interface{}{
 		"paging": func(offset, limit int) string {
 			return fmt.Sprintf("OFFSET %d LIMIT %d", offset, limit)
 		},
@@ -698,12 +709,13 @@ func TestCustomFuncs(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
-	OFFSET 3 LIMIT 50`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
+OFFSET 3 LIMIT 50`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -714,11 +726,12 @@ func TestCustomFuncs(t *testing.T) {
 }
 
 func TestCustomFuncsContinuous(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE name LIKE /*% infix "name" %*/''
-	/*% paging 3 50 %*/`
-	sql, args, err := New(Postgres).AddFunc("paging", func(offset, limit int) string {
+	s := `
+SELECT *
+FROM users
+WHERE name LIKE /*% infix "name" %*/''
+/*% paging 3 50 %*/`
+	query, args, err := sqlt.New(sqlt.Postgres).AddFunc("paging", func(offset, limit int) string {
 		return fmt.Sprintf("OFFSET %d LIMIT %d", offset, limit)
 	}).AddFunc("infix", func() {
 		panic("should not called")
@@ -729,12 +742,13 @@ func TestCustomFuncsContinuous(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
-	OFFSET 3 LIMIT 50`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	eSQL := `
+SELECT *
+FROM users
+WHERE name LIKE '%' || $1 || '%' ESCAPE '\'
+OFFSET 3 LIMIT 50`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -803,20 +817,16 @@ func TestExecStruct(t *testing.T) {
 	for _, d := range data {
 		tt := tagt.New(t, d.tag)
 		p := `/*% p "` + d.pArg + `" %*/''`
-		s := fmt.Sprintf(`SELECT *
-FROM users
-WHERE first_name = %s OR last_name = %s`, p, p)
-		sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+		s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
+		query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 			d.name: d.value,
 		})
 		if err != nil {
 			t.Error(err)
 		}
-		eSQL := `SELECT *
-FROM users
-WHERE first_name = $1 OR last_name = $1`
-		if eSQL != sql {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		eSQL := `SELECT * FROM users WHERE first_name = $1 OR last_name = $1`
+		if eSQL != query {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 		}
 		if len(args) != 1 {
 			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -847,20 +857,16 @@ func TestExecNamedStruct(t *testing.T) {
 	for _, d := range data {
 		tt := tagt.New(t, d.tag)
 		p := `/*% p "` + d.pArg + `" %*/''`
-		s := fmt.Sprintf(`SELECT *
-FROM users
-WHERE first_name = %s OR last_name = %s`, p, p)
-		sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+		s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
+		query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 			d.name: d.value,
 		})
 		if err != nil {
 			t.Error(err)
 		}
-		eSQL := fmt.Sprintf(`SELECT *
-FROM users
-WHERE first_name = :%s OR last_name = :%s`, d.argName, d.argName)
-		if eSQL != sql {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		eSQL := fmt.Sprintf(`SELECT * FROM users WHERE first_name = :%s OR last_name = :%s`, d.argName, d.argName)
+		if eSQL != query {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 		}
 		if len(args) != 1 {
 			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -893,20 +899,16 @@ func TestExecStructError(t *testing.T) {
 	}
 	for _, d := range data {
 		tt := tagt.New(t, d.tag)
-		s := `SELECT *
-FROM users
-WHERE name = /*% p "` + d.pArg + `" %*/''`
-		sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+		s := `SELECT * FROM users WHERE name = /*% p "` + d.pArg + `" %*/''`
+		query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 			"bar": d.value,
 		})
 		if err == nil {
 			tt.Error("should raise error")
 		}
-		eSQL := fmt.Sprintf(`SELECT *
-FROM users
-WHERE name = /*! %s */`, d.errMsg)
-		if eSQL != sql {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		eSQL := fmt.Sprintf(`SELECT * FROM users WHERE name = /*! %s */`, d.errMsg)
+		if eSQL != query {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 		}
 	}
 }
