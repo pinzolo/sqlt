@@ -41,7 +41,7 @@ ORDER BY /*% .order %*/id
 ```go
 // sql is generated SQL from template.
 // args are arguments for generated SQL.
-sql, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"ids":      []int{1, 2, 3},
 	"order":    "name DESC",
 	"onlyMale": false,
@@ -70,7 +70,7 @@ In future, driver support `sql.NamedArg`, you only need to change `Exec` to `Exe
 ```sql
 SELECT *
 FROM users
-WHERE id IN (:ids1, :ids2, :ids3)
+WHERE id IN (:ids__1, :ids__2, :ids__3)
 AND name = :name
 ORDER BY name DESC
 ```
@@ -85,7 +85,7 @@ $ go get github.com/pinzolo/sqlt
 
 ### Go version
 
-Go 1.8 or later
+Go 1.9 or later
 
 ### Databses
 
