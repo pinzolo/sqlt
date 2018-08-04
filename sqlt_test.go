@@ -565,14 +565,14 @@ INSERT INTO users (
 	if !ok {
 		t.Errorf("exec failed: 2nd arg expected time, but got %t", args[1])
 	}
-	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm1, et) {
 		t.Errorf("time should be current time, but got %v", tm1)
 	}
 	tm2, ok := args[2].(time.Time)
 	if !ok {
 		t.Errorf("exec failed: 3rd arg expected time, but got %t", args[2])
 	}
-	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm2, et) {
 		t.Errorf("time should be current time, but got %v", tm2)
 	}
 }
@@ -617,7 +617,7 @@ INSERT INTO users (
 	if !ok {
 		t.Errorf("exec failed: 2nd arg value expected time, but got %t", arg.Value)
 	}
-	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm1, et) {
 		t.Errorf("time should be current time, but got %v", tm1)
 	}
 	arg = args[2]
@@ -628,7 +628,7 @@ INSERT INTO users (
 	if !ok {
 		t.Errorf("exec failed: 3rd arg value expected time, but got %t", arg.Value)
 	}
-	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm2, et) {
 		t.Errorf("time should be current time, but got %v", tm2)
 	}
 }
@@ -673,7 +673,7 @@ INSERT INTO users (
 	if !ok {
 		t.Errorf("exec failed: 2nd args value expected time, but got %t", arg.Value)
 	}
-	if !(bt.Unix() <= tm1.Unix() && tm1.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm1, et) {
 		t.Errorf("time should be current time, but got %v", tm1)
 	}
 	arg = args[2]
@@ -684,7 +684,7 @@ INSERT INTO users (
 	if !ok {
 		t.Errorf("exec failed: 3rd args value expected time, but got %t", arg.Value)
 	}
-	if !(bt.Unix() <= tm2.Unix() && tm2.Unix() <= et.Unix()) {
+	if !isBetweenTime(bt, tm2, et) {
 		t.Errorf("time should be current time, but got %v", tm2)
 	}
 }
@@ -955,4 +955,8 @@ func isInvalidStringArg(arg sql.NamedArg, name string, s string) bool {
 		return true
 	}
 	return v != s
+}
+
+func isBetweenTime(bt, tm, et time.Time) bool {
+	return bt.Unix() <= tm.Unix() && tm.Unix() <= et.Unix()
 }

@@ -39,7 +39,7 @@ func New(dialect Dialect) SQLTemplate {
 	return SQLTemplate{dialect: dialect, CustomFuncs: make(map[string]interface{})}
 }
 
-// AddFunc add custom tempalte func.
+// AddFunc add custom template func.
 func (st SQLTemplate) AddFunc(name string, fn interface{}) SQLTemplate {
 	st.CustomFuncs[name] = fn
 	return st
