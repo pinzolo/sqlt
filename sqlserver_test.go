@@ -7,17 +7,13 @@ import (
 )
 
 func TestSQLServerP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = @p1`
+	eSQL := `SELECT * FROM users WHERE id = @p1`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -30,21 +26,23 @@ func TestSQLServerP(t *testing.T) {
 }
 
 func TestSQLServerRepeatedP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = @p1
-	OR given_name = @p1
-	OR nick_name = @p1`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = @p1
+OR given_name = @p1
+OR nick_name = @p1`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -57,17 +55,13 @@ func TestSQLServerRepeatedP(t *testing.T) {
 }
 
 func TestSQLServerPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.SQLServer).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = @id`
+	eSQL := `SELECT * FROM users WHERE id = @id`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -80,21 +74,23 @@ func TestSQLServerPNamed(t *testing.T) {
 }
 
 func TestSQLServerRepeatedPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.SQLServer).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = @name
-	OR given_name = @name
-	OR nick_name = @name`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = @name
+OR given_name = @name
+OR nick_name = @name`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -107,17 +103,13 @@ func TestSQLServerRepeatedPNamed(t *testing.T) {
 }
 
 func TestSQLServerIn(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (@p1, @p2)`
+	eSQL := `SELECT * FROM users WHERE id IN (@p1, @p2)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -133,17 +125,13 @@ func TestSQLServerIn(t *testing.T) {
 }
 
 func TestSQLServerInNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.SQLServer).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (@ids__1, @ids__2)`
+	eSQL := `SELECT * FROM users WHERE id IN (@ids__1, @ids__2)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -159,17 +147,13 @@ func TestSQLServerInNamed(t *testing.T) {
 }
 
 func TestSQLServerInWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (@p1)`
+	eSQL := `SELECT * FROM users WHERE id IN (@p1)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -182,17 +166,13 @@ func TestSQLServerInWithSingleValue(t *testing.T) {
 }
 
 func TestSQLServerInNamedWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.SQLServer).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (@ids)`
+	eSQL := `SELECT * FROM users WHERE id IN (@ids)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -205,13 +185,14 @@ func TestSQLServerInNamedWithSingleValue(t *testing.T) {
 }
 
 func TestSQLServerOtherTemplateFeature(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
+	s := `
+SELECT *
+FROM users
+WHERE id = /*%p "id" %*/1
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
@@ -221,11 +202,12 @@ func TestSQLServerOtherTemplateFeature(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = @p1
-	AND sex = 'MALE'
-	ORDER BY name DESC`
+	eSQL := `
+SELECT *
+FROM users
+WHERE id = @p1
+AND sex = 'MALE'
+ORDER BY name DESC`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -238,11 +220,12 @@ func TestSQLServerOtherTemplateFeature(t *testing.T) {
 }
 
 func TestSQLServerLikeEscape(t *testing.T) {
-	s := `SELECT *
-	FROM items
-	WHERE note1 LIKE /*% infix "note" %*/''
-	OR note2 LIKE /*% prefix "note" %*/''
-	OR note3 LIKE /*% suffix "note" %*/''`
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''`
 	query, args, err := sqlt.New(sqlt.SQLServer).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
@@ -250,11 +233,12 @@ func TestSQLServerLikeEscape(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM items
-	WHERE note1 LIKE '%' || @p1 || '%' ESCAPE '\'
-	OR note2 LIKE @p1 || '%' ESCAPE '\'
-	OR note3 LIKE '%' || @p1 ESCAPE '\'`
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || @p1 || '%' ESCAPE '\'
+OR note2 LIKE @p1 || '%' ESCAPE '\'
+OR note3 LIKE '%' || @p1 ESCAPE '\'`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}

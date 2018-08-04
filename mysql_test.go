@@ -8,17 +8,13 @@ import (
 )
 
 func TestMySQLP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = ?`
+	eSQL := `SELECT * FROM users WHERE id = ?`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -31,21 +27,23 @@ func TestMySQLP(t *testing.T) {
 }
 
 func TestMySQLRepeatedP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = ?
-	OR given_name = ?
-	OR nick_name = ?`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = ?
+OR given_name = ?
+OR nick_name = ?`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -60,17 +58,13 @@ func TestMySQLRepeatedP(t *testing.T) {
 }
 
 func TestMySQLPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = :id`
+	eSQL := `SELECT * FROM users WHERE id = :id`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -83,21 +77,23 @@ func TestMySQLPNamed(t *testing.T) {
 }
 
 func TestMySQLRepeatedPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = :name
-	OR given_name = :name
-	OR nick_name = :name`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = :name
+OR given_name = :name
+OR nick_name = :name`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -110,17 +106,13 @@ func TestMySQLRepeatedPNamed(t *testing.T) {
 }
 
 func TestMySQLIn(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (?, ?)`
+	eSQL := `SELECT * FROM users WHERE id IN (?, ?)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -136,17 +128,13 @@ func TestMySQLIn(t *testing.T) {
 }
 
 func TestMySQLInNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (:ids__1, :ids__2)`
+	eSQL := `SELECT * FROM users WHERE id IN (:ids__1, :ids__2)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -162,17 +150,13 @@ func TestMySQLInNamed(t *testing.T) {
 }
 
 func TestMySQLInWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (?)`
+	eSQL := `SELECT * FROM users WHERE id IN (?)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -185,17 +169,13 @@ func TestMySQLInWithSingleValue(t *testing.T) {
 }
 
 func TestMySQLInNamedWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (:ids)`
+	eSQL := `SELECT * FROM users WHERE id IN (:ids)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -208,13 +188,14 @@ func TestMySQLInNamedWithSingleValue(t *testing.T) {
 }
 
 func TestMySQLOtherTemplateFeature(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
+	s := `
+SELECT *
+FROM users
+WHERE id = /*%p "id" %*/1
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
@@ -224,11 +205,12 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = ?
-	AND sex = 'MALE'
-	ORDER BY name DESC`
+	eSQL := `
+SELECT *
+FROM users
+WHERE id = ?
+AND sex = 'MALE'
+ORDER BY name DESC`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -242,30 +224,32 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 
 func TestMySQLTime(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% time %*/'2000-01-01'
-	  , /*% time %*/'2000-01-01'
-	)`
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% time %*/'2000-01-01'
+  , /*% time %*/'2000-01-01'
+)`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    ?
-	  , ?
-	  , ?
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	?
+  , ?
+  , ?
+)`
 	et := time.Now()
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
@@ -291,30 +275,32 @@ func TestMySQLTime(t *testing.T) {
 
 func TestMySQLNow(t *testing.T) {
 	bt := time.Now()
-	s := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    /*% p "name" %*/'John Doe'
-	  , /*% now %*/'2000-01-01'
-	  , /*% now %*/'2000-01-01'
-	)`
+	s := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	/*% p "name" %*/'John Doe'
+  , /*% now %*/'2000-01-01'
+  , /*% now %*/'2000-01-01'
+)`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	eSQL := `INSERT INTO users (
-	    name
-	  , created_at
-	  , updated_at
-	) VALUES (
-	    ?
-	  , ?
-	  , ?
-	)`
+	eSQL := `
+INSERT INTO users (
+	name
+  , created_at
+  , updated_at
+) VALUES (
+	?
+  , ?
+  , ?
+)`
 	et := time.Now()
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
@@ -339,11 +325,12 @@ func TestMySQLNow(t *testing.T) {
 }
 
 func TestMySQLLikeEscape(t *testing.T) {
-	s := `SELECT *
-	FROM items
-	WHERE note1 LIKE /*% infix "note" %*/''
-	OR note2 LIKE /*% prefix "note" %*/''
-	OR note3 LIKE /*% suffix "note" %*/''`
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
@@ -351,11 +338,12 @@ func TestMySQLLikeEscape(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM items
-	WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
-	OR note2 LIKE ? || '%' ESCAPE '\'
-	OR note3 LIKE '%' || ? ESCAPE '\'`
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
+OR note2 LIKE ? || '%' ESCAPE '\'
+OR note3 LIKE '%' || ? ESCAPE '\'`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}

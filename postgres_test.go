@@ -7,17 +7,13 @@ import (
 )
 
 func TestPostgresP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = $1`
+	eSQL := `SELECT * FROM users WHERE id = $1`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -30,21 +26,23 @@ func TestPostgresP(t *testing.T) {
 }
 
 func TestPostgresRepeatedP(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = $1
-	OR given_name = $1
-	OR nick_name = $1`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = $1
+OR given_name = $1
+OR nick_name = $1`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -57,17 +55,13 @@ func TestPostgresRepeatedP(t *testing.T) {
 }
 
 func TestPostgresPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1`
+	s := `SELECT * FROM users WHERE id = /*%p "id" %*/1`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = :id`
+	eSQL := `SELECT * FROM users WHERE id = :id`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -80,21 +74,23 @@ func TestPostgresPNamed(t *testing.T) {
 }
 
 func TestPostgresRepeatedPNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE family_name = /*%p "name" %*/'foo'
-	OR given_name = /*%p "name" %*/'bar'
-	OR nick_name = /*%p "name" %*/'baz'`
+	s := `
+SELECT *
+FROM users
+WHERE family_name = /*%p "name" %*/'foo'
+OR given_name = /*%p "name" %*/'bar'
+OR nick_name = /*%p "name" %*/'baz'`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE family_name = :name
-	OR given_name = :name
-	OR nick_name = :name`
+	eSQL := `
+SELECT *
+FROM users
+WHERE family_name = :name
+OR given_name = :name
+OR nick_name = :name`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -107,17 +103,13 @@ func TestPostgresRepeatedPNamed(t *testing.T) {
 }
 
 func TestPostgresIn(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN ($1, $2)`
+	eSQL := `SELECT * FROM users WHERE id IN ($1, $2)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -133,17 +125,13 @@ func TestPostgresIn(t *testing.T) {
 }
 
 func TestPostgresInNamed(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (:ids__1, :ids__2)`
+	eSQL := `SELECT * FROM users WHERE id IN (:ids__1, :ids__2)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -159,17 +147,13 @@ func TestPostgresInNamed(t *testing.T) {
 }
 
 func TestPostgresInWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN ($1)`
+	eSQL := `SELECT * FROM users WHERE id IN ($1)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -182,17 +166,13 @@ func TestPostgresInWithSingleValue(t *testing.T) {
 }
 
 func TestPostgresInNamedWithSingleValue(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id IN /*%in "ids" %*/(1, 2)`
+	s := `SELECT * FROM users WHERE id IN /*%in "ids" %*/(1, 2)`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id IN (:ids)`
+	eSQL := `SELECT * FROM users WHERE id IN (:ids)`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -205,13 +185,14 @@ func TestPostgresInNamedWithSingleValue(t *testing.T) {
 }
 
 func TestPostgresOtherTemplateFeature(t *testing.T) {
-	s := `SELECT *
-	FROM users
-	WHERE id = /*%p "id" %*/1
-	/*%- if .onlyMale %*/
-	AND sex = 'MALE'
-	/*%- end%*/
-	ORDER BY /*% .order %*/id`
+	s := `
+SELECT *
+FROM users
+WHERE id = /*%p "id" %*/1
+/*%- if .onlyMale %*/
+AND sex = 'MALE'
+/*%- end%*/
+ORDER BY /*% .order %*/id`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
@@ -221,11 +202,12 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM users
-	WHERE id = $1
-	AND sex = 'MALE'
-	ORDER BY name DESC`
+	eSQL := `
+SELECT *
+FROM users
+WHERE id = $1
+AND sex = 'MALE'
+ORDER BY name DESC`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
@@ -238,11 +220,12 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 }
 
 func TestPostgresLikeEscape(t *testing.T) {
-	s := `SELECT *
-	FROM items
-	WHERE note1 LIKE /*% infix "note" %*/''
-	OR note2 LIKE /*% prefix "note" %*/''
-	OR note3 LIKE /*% suffix "note" %*/''`
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
@@ -250,11 +233,12 @@ func TestPostgresLikeEscape(t *testing.T) {
 		t.Error(err)
 	}
 
-	eSQL := `SELECT *
-	FROM items
-	WHERE note1 LIKE '%' || $1 || '%' ESCAPE '\'
-	OR note2 LIKE $1 || '%' ESCAPE '\'
-	OR note3 LIKE '%' || $1 ESCAPE '\'`
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || $1 || '%' ESCAPE '\'
+OR note2 LIKE $1 || '%' ESCAPE '\'
+OR note3 LIKE '%' || $1 ESCAPE '\'`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
