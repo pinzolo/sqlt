@@ -314,10 +314,10 @@ OR email IN ($1, $2)`
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
 	if isInvalidString(args[0], "foo") {
-		t.Errorf("exec failed: values should have 1, but got %v", args)
+		t.Errorf("exec failed: values should have %q, but got %v", "foo", args)
 	}
 	if isInvalidString(args[1], "bar") {
-		t.Errorf("exec failed: values should have 1, but got %v", args)
+		t.Errorf("exec failed: values should have %q, but got %v", "bar", args)
 	}
 }
 

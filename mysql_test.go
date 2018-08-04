@@ -330,7 +330,8 @@ SELECT *
 FROM items
 WHERE note1 LIKE /*% infix "note" %*/''
 OR note2 LIKE /*% prefix "note" %*/''
-OR note3 LIKE /*% suffix "note" %*/''`
+OR note3 LIKE /*% suffix "note" %*/''
+OR note4 = /*% p "note" %*/''`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
@@ -343,14 +344,135 @@ SELECT *
 FROM items
 WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
 OR note2 LIKE ? || '%' ESCAPE '\'
-OR note3 LIKE '%' || ? ESCAPE '\'`
+OR note3 LIKE '%' || ? ESCAPE '\'
+OR note4 = ?`
 	if eSQL != query {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
-	if len(args) != 3 {
-		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	if len(args) != 4 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
 	if args[0] != `abc\%def\_ghi％jkl＿mno[pqr\\stu` {
-		t.Errorf("exec failed: escaped value %q is invalid", args[0])
+		t.Errorf("exec failed: 1st value %q is invalid", args[0])
+	}
+	if args[1] != `abc\%def\_ghi％jkl＿mno[pqr\\stu` {
+		t.Errorf("exec failed: 2nd value %q is invalid", args[1])
+	}
+	if args[2] != `abc\%def\_ghi％jkl＿mno[pqr\\stu` {
+		t.Errorf("exec failed: 3rd value %q is invalid", args[2])
+	}
+	if args[3] != `abc%def_ghi％jkl＿mno[pqr\stu` {
+		t.Errorf("exec failed: 4th value %q is invalid", args[3])
+	}
+}
+
+func TestMySQLLikeEscapeNamed(t *testing.T) {
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''
+OR note4 = /*% p "note" %*/''`
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, map[string]interface{}{
+		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || :note__esc || '%' ESCAPE '\'
+OR note2 LIKE :note__esc || '%' ESCAPE '\'
+OR note3 LIKE '%' || :note__esc ESCAPE '\'
+OR note4 = :note`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 2 {
+		t.Errorf("exec failed: values should have 1 length, but got %v", args)
+	}
+	if isInvalidStringArg(args[0], "note__esc", `abc\%def\_ghi％jkl＿mno[pqr\\stu`) {
+		t.Errorf("exec failed: escaped value %v is invalid", args[0])
+	}
+	if isInvalidStringArg(args[1], "note", `abc%def_ghi％jkl＿mno[pqr\stu`) {
+		t.Errorf("exec failed: escaped value %v is invalid", args[1])
+	}
+}
+
+func TestMySQLLikeEscapeWithoutWildcard(t *testing.T) {
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''
+OR note4 = /*% p "note" %*/''`
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
+		"note": `abcde`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
+OR note2 LIKE ? || '%' ESCAPE '\'
+OR note3 LIKE '%' || ? ESCAPE '\'
+OR note4 = ?`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 4 {
+		t.Error("exec failed: when not exist wildcard char should reuse original")
+	}
+	if args[0] != `abcde` {
+		t.Errorf("exec failed: 1st value %q is invalid", args[0])
+	}
+	if args[1] != `abcde` {
+		t.Errorf("exec failed: 2nd value %q is invalid", args[1])
+	}
+	if args[2] != `abcde` {
+		t.Errorf("exec failed: 3rd value %q is invalid", args[2])
+	}
+	if args[3] != `abcde` {
+		t.Errorf("exec failed: 4th value %q is invalid", args[3])
+	}
+}
+
+func TestMySQLLikeEscapeNamedWithoutWildcard(t *testing.T) {
+	s := `
+SELECT *
+FROM items
+WHERE note1 LIKE /*% infix "note" %*/''
+OR note2 LIKE /*% prefix "note" %*/''
+OR note3 LIKE /*% suffix "note" %*/''
+OR note4 = /*% p "note" %*/''`
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, map[string]interface{}{
+		"note": `abcde`,
+	})
+	if err != nil {
+		t.Error(err)
+	}
+
+	eSQL := `
+SELECT *
+FROM items
+WHERE note1 LIKE '%' || :note || '%' ESCAPE '\'
+OR note2 LIKE :note || '%' ESCAPE '\'
+OR note3 LIKE '%' || :note ESCAPE '\'
+OR note4 = :note`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 1 {
+		t.Error("exec failed: when not exist wildcard char should reuse original")
+	}
+	if isInvalidStringArg(args[0], "note", `abcde`) {
+		t.Errorf("exec failed: escaped value %v is invalid", args[0])
 	}
 }

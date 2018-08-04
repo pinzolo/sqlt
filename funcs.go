@@ -8,23 +8,24 @@ import (
 	"text/template"
 )
 
-func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) string {
+func (c *context) paramWithFunc(name string, fn func(string, interface{}) (string, interface{})) string {
 	p, err := c.Get(name)
 	if err != nil {
 		return c.errorOutput(err)
 	}
 
+	nm := p.name
 	v := p.value
 	if fn != nil {
-		v = fn(v)
+		nm, v = fn(nm, v)
 	}
 
 	if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
-		c.MergeArg(p.name, v)
+		c.MergeArg(nm, v)
 	} else {
-		c.AddArg(name, v)
+		c.AddArg(nm, v)
 	}
-	return c.Placeholder(p.name)
+	return c.Placeholder(nm)
 }
 
 func (c *context) param(name string) string {
@@ -88,7 +89,13 @@ func (c *context) suffix(name string) string {
 }
 
 func (c *context) paramWithEscapeLike(name string) string {
-	return c.paramWithFunc(name, c.escapeLike)
+	return c.paramWithFunc(name, func(name string, v interface{}) (string, interface{}) {
+		nv := c.escapeLike(v)
+		if nv == v {
+			return name, v
+		}
+		return name + "__esc", nv
+	})
 }
 
 func (c *context) escapeLike(i interface{}) interface{} {
