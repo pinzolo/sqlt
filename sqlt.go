@@ -59,7 +59,7 @@ func (st SQLTemplate) Exec(text string, m map[string]interface{}) (string, []int
 	if err != nil {
 		return "", nil, err
 	}
-	return s, c.Args(), nil
+	return s, c.Args(), c.err
 }
 
 // ExecNamed executes given template with given map parameters.
@@ -70,7 +70,7 @@ func (st SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, 
 	if err != nil {
 		return "", nil, err
 	}
-	return s, c.NamedArgs(), nil
+	return s, c.NamedArgs(), c.err
 }
 
 func (st SQLTemplate) exec(c *context, text string, m map[string]interface{}) (string, error) {

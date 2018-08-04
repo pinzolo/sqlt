@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/pinzolo/tagt"
 )
 
 func BenchmarkExec(b *testing.B) {
@@ -250,14 +252,14 @@ func TestWithInvalidParamNameOnParamFunc(t *testing.T) {
 		"onlyMale": true,
 		"name":     "Alex",
 	})
-	if err != nil {
-		t.Error(err)
+	if err == nil {
+		t.Errorf("exec failed: should raise error when unknown param")
 	}
 
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN ($1, $2, $3)
-	AND name = /*! userName is unknown */
+	AND name = /*! unknown param: userName */
 	AND sex = 'MALE'
 	ORDER BY name DESC`
 	if eSQL != sql {
@@ -280,13 +282,13 @@ func TestWithInvalidParamNameOnInFunc(t *testing.T) {
 		"onlyMale": true,
 		"name":     "Alex",
 	})
-	if err != nil {
-		t.Error(err)
+	if err == nil {
+		t.Errorf("exec failed: should raise error when unknown param")
 	}
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN /*! idList is unknown */
+	WHERE id IN /*! unknown param: idList */
 	AND name = $1
 	AND sex = 'MALE'
 	ORDER BY name DESC`
@@ -707,7 +709,7 @@ func TestCustomFuncs(t *testing.T) {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
 	if args[0] != `Alex` {
-		t.Error("exec failed: embeded function should not be overwritten")
+		t.Error("exec failed: embedded function should not be overwritten")
 	}
 }
 
@@ -738,7 +740,174 @@ func TestCustomFuncsContinuous(t *testing.T) {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
 	}
 	if args[0] != `Alex` {
-		t.Error("exec failed: embeded function should not be overwritten")
+		t.Error("exec failed: embedded function should not be overwritten")
+	}
+}
+
+type Foo struct {
+	Value string
+}
+
+type Bar struct {
+	Foo    Foo
+	FooPtr *Foo
+	Baz    Baz
+}
+
+func (b Bar) Value() string {
+	return b.Foo.Value
+}
+
+func (b Bar) Prop() Foo {
+	return b.Foo
+}
+
+func (b Bar) PropPtr() *Foo {
+	return b.FooPtr
+}
+
+func (b Bar) FnIn(s string) string {
+	return s + b.Foo.Value
+}
+
+func (b Bar) FnOut2() (string, error) {
+	return b.Foo.Value, nil
+}
+
+type Baz interface {
+	Value() string
+}
+
+type baz struct{}
+
+func (z *baz) Value() string {
+	return "Alex"
+}
+
+func TestExecStruct(t *testing.T) {
+	data := []struct {
+		name  string
+		value interface{}
+		pArg  string
+		tag   string
+	}{
+		{"foo", Foo{"Alex"}, "foo.Value", "simple struct"},
+		{"foo", &Foo{"Alex"}, "foo.Value", "simple struct ptr"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Foo.Value", "nested struct"},
+		{"bar", Bar{FooPtr: &Foo{"Alex"}}, "bar.FooPtr.Value", "nested struct ptr"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Value", "getter"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Prop.Value", "nested getter"},
+		{"bar", Bar{FooPtr: &Foo{"Alex"}}, "bar.PropPtr.Value", "nested getter ptr"},
+		{"bar", Bar{Baz: &baz{}}, "bar.Baz.Value", "interface"},
+	}
+	for _, d := range data {
+		tt := tagt.New(t, d.tag)
+		p := `/*% p "` + d.pArg + `" %*/''`
+		s := fmt.Sprintf(`SELECT *
+FROM users
+WHERE first_name = %s OR last_name = %s`, p, p)
+		sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+			d.name: d.value,
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		eSQL := `SELECT *
+FROM users
+WHERE first_name = $1 OR last_name = $1`
+		if eSQL != sql {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		}
+		if len(args) != 1 {
+			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
+		}
+		if args[0] != "Alex" {
+			tt.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0])
+		}
+	}
+}
+
+func TestExecNamedStruct(t *testing.T) {
+	data := []struct {
+		name    string
+		value   interface{}
+		pArg    string
+		argName string
+		tag     string
+	}{
+		{"foo", Foo{"Alex"}, "foo.Value", "foo__Value", "simple struct"},
+		{"foo", &Foo{"Alex"}, "foo.Value", "foo__Value", "simple struct ptr"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Foo.Value", "bar__Foo__Value", "nested struct"},
+		{"bar", Bar{FooPtr: &Foo{"Alex"}}, "bar.FooPtr.Value", "bar__FooPtr__Value", "nested struct ptr"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Value", "bar__Value", "getter"},
+		{"bar", Bar{Foo: Foo{"Alex"}}, "bar.Prop.Value", "bar__Prop__Value", "nested getter"},
+		{"bar", Bar{FooPtr: &Foo{"Alex"}}, "bar.PropPtr.Value", "bar__PropPtr__Value", "nested getter ptr"},
+		{"bar", Bar{Baz: &baz{}}, "bar.Baz.Value", "bar__Baz__Value", "interface"},
+	}
+	for _, d := range data {
+		tt := tagt.New(t, d.tag)
+		p := `/*% p "` + d.pArg + `" %*/''`
+		s := fmt.Sprintf(`SELECT *
+FROM users
+WHERE first_name = %s OR last_name = %s`, p, p)
+		sql, args, err := New(Postgres).ExecNamed(s, map[string]interface{}{
+			d.name: d.value,
+		})
+		if err != nil {
+			t.Error(err)
+		}
+		eSQL := fmt.Sprintf(`SELECT *
+FROM users
+WHERE first_name = :%s OR last_name = :%s`, d.argName, d.argName)
+		if eSQL != sql {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		}
+		if len(args) != 1 {
+			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
+		}
+		if args[0].Name != d.argName {
+			tt.Errorf("exec failed: expected args name %q, but got %q", "foo__Value", args[0].Name)
+		}
+		if s, ok := args[0].Value.(string); !ok || s != "Alex" {
+			tt.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0].Value)
+		}
+	}
+}
+
+func TestExecStructError(t *testing.T) {
+	data := []struct {
+		value  interface{}
+		pArg   string
+		errMsg string
+		tag    string
+	}{
+		{Bar{Foo: Foo{"Alex"}}, "bar.Qux.Value", "unknown param: bar.Qux", "unknown"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.Value.Length", "not struct: bar.Value", "not struct"},
+		{Bar{}, "bar.FooPtr.Value", "nil value: bar.FooPtr", "nil field"},
+		{Bar{}, "bar.PropPtr.Value", "nil value: bar.PropPtr", "nil getter"},
+		{Bar{}, "bar.Baz.Value", "nil value: bar.Baz", "nil interface"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.FnIn.Value", "invalid method: bar.FnIn", "invalid in arg num method"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.FnOut2.Value", "invalid method: bar.FnOut2", "invalid out val num method"},
+		{nil, "bar.FooPtr.Value", "nil value: bar", "nil root"},
+		{Bar{Foo: Foo{"Alex"}}, "baz.Foo.Value", "unknown param: baz", "unknown root"},
+	}
+	for _, d := range data {
+		tt := tagt.New(t, d.tag)
+		s := `SELECT *
+FROM users
+WHERE name = /*% p "` + d.pArg + `" %*/''`
+		sql, _, err := New(Postgres).Exec(s, map[string]interface{}{
+			"bar": d.value,
+		})
+		if err == nil {
+			tt.Error("should raise error")
+		}
+		eSQL := fmt.Sprintf(`SELECT *
+FROM users
+WHERE name = /*! %s */`, d.errMsg)
+		if eSQL != sql {
+			tt.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+		}
 	}
 }
 

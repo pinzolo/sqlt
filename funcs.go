@@ -9,9 +9,9 @@ import (
 )
 
 func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) string {
-	p := c.get(name)
-	if p == nil {
-		return unknownParamOutput(name)
+	p, err := c.Get(name)
+	if err != nil {
+		return c.errorOutput(err)
 	}
 
 	v := p.value
@@ -20,9 +20,9 @@ func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) s
 	}
 
 	if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
-		c.mergeArg(p.name, v)
+		c.MergeArg(p.name, v)
 	} else {
-		c.addArg(name, v)
+		c.AddArg(name, v)
 	}
 	return c.Placeholder(p.name)
 }
@@ -32,9 +32,9 @@ func (c *context) param(name string) string {
 }
 
 func (c *context) in(name string) string {
-	p := c.get(name)
-	if p == nil {
-		return unknownParamOutput(name)
+	p, err := c.Get(name)
+	if err != nil {
+		return c.errorOutput(err)
 	}
 
 	v := reflect.ValueOf(p.value)
@@ -47,9 +47,9 @@ func (c *context) in(name string) string {
 		sv := v.Index(i).Interface()
 		argName := fmt.Sprintf("%s__%d", name, i+1)
 		if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
-			c.mergeArg(argName, sv)
+			c.MergeArg(argName, sv)
 		} else {
-			c.addArg(argName, sv)
+			c.AddArg(argName, sv)
 		}
 		placeholders[i] = c.Placeholder(argName)
 	}
@@ -60,9 +60,9 @@ func (c *context) time() string {
 	name := "time__"
 	tm := c.timer.time()
 	if c.named || c.dialect.IsOrdinalPlaceholderSupported() {
-		c.mergeArg(name, tm)
+		c.MergeArg(name, tm)
 	} else {
-		c.addArg(name, tm)
+		c.AddArg(name, tm)
 	}
 
 	return c.Placeholder(name)
@@ -70,7 +70,7 @@ func (c *context) time() string {
 
 func (c *context) now() string {
 	name := "now__" + strconv.Itoa(c.timer.nowCnt)
-	c.addArg(name, c.timer.now())
+	c.AddArg(name, c.timer.now())
 	return c.Placeholder(name)
 }
 
