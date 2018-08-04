@@ -107,7 +107,7 @@ func TestOracleRepeatedPNamed(t *testing.T) {
 func TestOracleIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id  /*%in "ids" %*/(1, 2)`
+	WHERE id IN /*%in "ids" %*/(1, 2)`
 	sql, args, err := New(Oracle).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
@@ -115,7 +115,7 @@ func TestOracleIn(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id  (:1, :2)`
+	WHERE id IN (:1, :2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -133,7 +133,7 @@ func TestOracleIn(t *testing.T) {
 func TestOracleInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id  /*%in "ids" %*/(1, 2)`
+	WHERE id IN /*%in "ids" %*/(1, 2)`
 	sql, args, err := New(Oracle).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
@@ -141,17 +141,17 @@ func TestOracleInNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id  (:ids1, :ids2)`
+	WHERE id IN (:ids__1, :ids__2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
-	if isInvalidIntArg(args[0], "ids1", 1) {
+	if isInvalidIntArg(args[0], "ids__1", 1) {
 		t.Errorf("exec failed: values should have id = 1, but got %v", args)
 	}
-	if isInvalidIntArg(args[1], "ids2", 2) {
+	if isInvalidIntArg(args[1], "ids__2", 2) {
 		t.Errorf("exec failed: values should have id = 2, but got %v", args)
 	}
 }
@@ -159,7 +159,7 @@ func TestOracleInNamed(t *testing.T) {
 func TestOracleInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id  /*%in "ids" %*/(1, 2)`
+	WHERE id IN /*%in "ids" %*/(1, 2)`
 	sql, args, err := New(Oracle).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
@@ -167,7 +167,7 @@ func TestOracleInWithSingleValue(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id  (:1)`
+	WHERE id IN (:1)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
@@ -182,7 +182,7 @@ func TestOracleInWithSingleValue(t *testing.T) {
 func TestOracleInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
-	WHERE id  /*%in "ids" %*/(1, 2)`
+	WHERE id IN /*%in "ids" %*/(1, 2)`
 	sql, args, err := New(Oracle).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
@@ -190,7 +190,7 @@ func TestOracleInNamedWithSingleValue(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id  (:ids)`
+	WHERE id IN (:ids)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}

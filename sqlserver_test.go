@@ -141,17 +141,17 @@ func TestSQLServerInNamed(t *testing.T) {
 
 	eSQL := `SELECT *
 	FROM users
-	WHERE id IN (@ids1, @ids2)`
+	WHERE id IN (@ids__1, @ids__2)`
 	if eSQL != sql {
 		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
 	}
-	if isInvalidIntArg(args[0], "ids1", 1) {
+	if isInvalidIntArg(args[0], "ids__1", 1) {
 		t.Errorf("exec failed: values should have id = 1, but got %v", args)
 	}
-	if isInvalidIntArg(args[1], "ids2", 2) {
+	if isInvalidIntArg(args[1], "ids__2", 2) {
 		t.Errorf("exec failed: values should have id = 2, but got %v", args)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 )
 
@@ -18,7 +17,6 @@ const (
 type param struct {
 	name  string
 	value interface{}
-	index int
 }
 
 func newParam(name string, value interface{}) *param {
@@ -29,13 +27,12 @@ func newParam(name string, value interface{}) *param {
 }
 
 type context struct {
-	named     bool
-	dialect   Dialect
-	params    []*param
-	namedArgs []sql.NamedArg
-	values    []interface{}
-	paramMap  map[string]interface{}
-	timer     *timer
+	named   bool
+	dialect Dialect
+	params  []*param
+	args    []*param
+	timer   *timer
+	err     error
 }
 
 func newContext(named bool, dialect Dialect, timeFn func() time.Time, m map[string]interface{}) *context {
@@ -50,188 +47,153 @@ func newContext(named bool, dialect Dialect, timeFn func() time.Time, m map[stri
 		fn = timeFn
 	}
 	return &context{
-		named:     named,
-		dialect:   dialect,
-		params:    params,
-		namedArgs: []sql.NamedArg{},
-		values:    []interface{}{},
-		paramMap:  m,
-		timer:     newTimer(fn),
+		named:   named,
+		dialect: dialect,
+		params:  params,
+		args:    make([]*param, 0),
+		timer:   newTimer(fn),
 	}
 }
 
-func (c *context) get(name string) *param {
+func (c *context) Get(name string) (*param, error) {
+	if strings.Contains(name, ".") {
+		return c.Dig(strings.Split(name, "."))
+	}
 	for _, p := range c.params {
 		if p.name == name {
-			return p
+			return p, nil
 		}
 	}
-	return nil
+	return nil, fmt.Errorf("unknown param: %s", name)
 }
 
-func (c *context) addNamed(name string, value interface{}) {
-	for _, arg := range c.namedArgs {
-		if arg.Name == name {
+func (c *context) Dig(names []string) (*param, error) {
+	p, err := c.Get(names[0])
+	if err != nil {
+		return nil, err
+	}
+
+	qname := names[0]
+	if p.value == nil {
+		return nil, fmt.Errorf("nil value: %s", qname)
+	}
+	v := reflect.ValueOf(p.value)
+	for _, name := range names[1:] {
+		v, err = findValue(v, name, qname)
+		if err != nil {
+			return nil, err
+		}
+		qname = qname + "." + name
+		if v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return nil, fmt.Errorf("nil value: %s", qname)
+			}
+		}
+	}
+	return newParam(strings.Join(names, "__"), v.Interface()), nil
+}
+
+func findValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// cannot find field from pointer or interface, but can find method from those.
+	// so at first search method.
+	v, err := findMethodValue(val, name, prefix)
+	if err != nil {
+		return v, err
+	}
+	if v.IsValid() {
+		return v, nil
+	}
+
+	return findFieldValue(val, name, prefix)
+}
+
+func findMethodValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// Finding method raises panic when Interface and nil.
+	if val.Kind() == reflect.Interface && val.IsNil() {
+		return val, fmt.Errorf("nil value: %s", prefix)
+	}
+
+	v := val.MethodByName(name)
+	qname := prefix + "." + name
+	if !v.IsValid() {
+		return v, nil
+	}
+	t := v.Type()
+	if t.NumIn() != 0 || t.NumOut() != 1 {
+		return v, fmt.Errorf("invalid method: %s", qname)
+	}
+	v = v.Call([]reflect.Value{})[0]
+	return v, nil
+}
+
+func findFieldValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	// When value is pointer or interface, must call `Elem()` recursively.
+	if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
+		return findFieldValue(val.Elem(), name, prefix)
+	}
+
+	// Finding field raises panic when not struct
+	if val.Kind() != reflect.Struct {
+		return val, fmt.Errorf("not struct: %s", prefix)
+	}
+
+	v := val.FieldByName(name)
+	qname := prefix + "." + name
+	if !v.IsValid() {
+		return v, fmt.Errorf("unknown param: %s", qname)
+	}
+	return v, nil
+}
+
+func (c *context) AddArg(name string, value interface{}) {
+	c.args = append(c.args, newParam(name, value))
+}
+
+func (c *context) MergeArg(name string, value interface{}) {
+	for _, arg := range c.args {
+		if arg.name == name {
 			return
 		}
 	}
-	c.namedArgs = append(c.namedArgs, sql.Named(name, value))
+	c.AddArg(name, value)
 }
 
-func (c *context) paramWithFunc(name string, fn func(interface{}) interface{}) string {
-	p := c.get(name)
-	if p == nil {
-		return unknownParamOutput(name)
-	}
-
-	v := p.value
-	if fn != nil {
-		v = fn(v)
-	}
-
-	if c.named {
-		c.addNamed(p.name, v)
-		return c.dialect.NamedPlaceholderPrefix() + p.name
-	}
-
-	if c.dialect.IsOrdinalPlaceholderSupported() {
-		if p.index == 0 {
-			c.values = append(c.values, v)
-			p.index = len(c.values)
+func (c *context) ArgIndex(name string) int {
+	for i, arg := range c.args {
+		if arg.name == name {
+			return i + 1
 		}
-		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(p.index)
 	}
-	c.values = append(c.values, v)
-	return c.dialect.Placeholder()
+	return 0
 }
 
-func (c *context) param(name string) string {
-	return c.paramWithFunc(name, nil)
+func (c *context) Args() []interface{} {
+	v := make([]interface{}, len(c.args))
+	for i, arg := range c.args {
+		v[i] = arg.value
+	}
+	return v
 }
 
-func (c *context) in(name string) string {
-	p := c.get(name)
-	if p == nil {
-		return unknownParamOutput(name)
+func (c *context) NamedArgs() []sql.NamedArg {
+	v := make([]sql.NamedArg, len(c.args))
+	for i, arg := range c.args {
+		v[i] = sql.Named(arg.name, arg.value)
 	}
-
-	v := reflect.ValueOf(p.value)
-	if v.Kind() != reflect.Slice {
-		return "(" + c.param(name) + ")"
-	}
-
-	placeholders := make([]string, v.Len())
-	for i := 0; i < v.Len(); i++ {
-		sv := v.Index(i).Interface()
-		var placeholder string
-		if c.named {
-			placeholder = c.dialect.NamedPlaceholderPrefix() + name + strconv.Itoa(i+1)
-			c.namedArgs = append(c.namedArgs, sql.Named(name+strconv.Itoa(i+1), sv))
-		} else {
-			c.values = append(c.values, sv)
-			if c.dialect.IsOrdinalPlaceholderSupported() {
-				placeholder = c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
-			} else {
-				placeholder = c.dialect.Placeholder()
-			}
-		}
-		placeholders[i] = placeholder
-	}
-	return "(" + strings.Join(placeholders, ", ") + ")"
+	return v
 }
 
-func (c *context) time() string {
-	name := "time__"
+func (c *context) Placeholder(name string) string {
 	if c.named {
-		c.addNamed(name, c.timer.time())
 		return c.dialect.NamedPlaceholderPrefix() + name
 	}
-
 	if c.dialect.IsOrdinalPlaceholderSupported() {
-		if c.timer.cacheIndex == 0 {
-			c.values = append(c.values, c.timer.time())
-			c.timer.cacheIndex = len(c.values)
-		}
-		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(c.timer.cacheIndex)
+		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(c.ArgIndex(name))
 	}
-
-	c.values = append(c.values, c.timer.time())
 	return c.dialect.Placeholder()
 }
 
-func (c *context) now() string {
-	name := "now__" + strconv.Itoa(c.timer.nowCnt)
-	if c.named {
-		c.addNamed(name, c.timer.now())
-		return c.dialect.NamedPlaceholderPrefix() + name
-	}
-
-	if c.dialect.IsOrdinalPlaceholderSupported() {
-		c.values = append(c.values, c.timer.now())
-		return c.dialect.OrdinalPlaceholderPrefix() + strconv.Itoa(len(c.values))
-	}
-
-	c.values = append(c.values, c.timer.now())
-	return c.dialect.Placeholder()
-}
-
-func (c *context) prefix(name string) string {
-	return c.paramWithEscapeLike(name) + " || '%'" + escapeClause
-}
-
-func (c *context) infix(name string) string {
-	return "'%' || " + c.paramWithEscapeLike(name) + " || '%'" + escapeClause
-}
-
-func (c *context) suffix(name string) string {
-	return "'%' || " + c.paramWithEscapeLike(name) + escapeClause
-
-}
-
-func (c *context) paramWithEscapeLike(name string) string {
-	return c.paramWithFunc(name, c.escapeLike)
-}
-
-func (c *context) escapeLike(i interface{}) interface{} {
-	s, ok := i.(string)
-	if !ok {
-		return i
-	}
-
-	rs := []rune(s)
-	v := make([]rune, 0)
-	for _, r := range rs {
-		if c.isEscapee(r) {
-			v = append(v, escapeChar)
-		}
-		v = append(v, r)
-	}
-	return string(v)
-}
-
-func (c *context) isEscapee(r rune) bool {
-	for _, w := range c.dialect.WildcardRunes() {
-		if r == w || r == escapeChar {
-			return true
-		}
-	}
-	return false
-}
-
-func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
-	fm := template.FuncMap(funcs)
-	fm["param"] = c.param
-	fm["p"] = c.param
-	fm["in"] = c.in
-	fm["time"] = c.time
-	fm["now"] = c.now
-	fm["prefix"] = c.prefix
-	fm["infix"] = c.infix
-	fm["suffix"] = c.suffix
-	fm["escape"] = c.escapeLike
-	return fm
-}
-
-func unknownParamOutput(name string) string {
-	return fmt.Sprintf("/*! %s is unknown */", name)
+func (c *context) errorOutput(err error) string {
+	c.err = err
+	return fmt.Sprintf("/*! %s */", err.Error())
 }
