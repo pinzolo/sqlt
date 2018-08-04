@@ -1,14 +1,16 @@
-package sqlt
+package sqlt_test
 
 import (
 	"testing"
+
+	"github.com/pinzolo/sqlt"
 )
 
 func TestPostgresP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, args, err := New(Postgres).Exec(s, singleMap("id", 1))
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -16,8 +18,8 @@ func TestPostgresP(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id = $1`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -33,7 +35,7 @@ func TestPostgresRepeatedP(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, args, err := New(Postgres).Exec(s, singleMap("name", "test"))
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -43,8 +45,8 @@ func TestPostgresRepeatedP(t *testing.T) {
 	WHERE family_name = $1
 	OR given_name = $1
 	OR nick_name = $1`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -58,7 +60,7 @@ func TestPostgresPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, args, err := New(Postgres).ExecNamed(s, singleMap("id", 1))
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,8 +68,8 @@ func TestPostgresPNamed(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id = :id`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -83,7 +85,7 @@ func TestPostgresRepeatedPNamed(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, args, err := New(Postgres).ExecNamed(s, singleMap("name", "test"))
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -93,8 +95,8 @@ func TestPostgresRepeatedPNamed(t *testing.T) {
 	WHERE family_name = :name
 	OR given_name = :name
 	OR nick_name = :name`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -108,7 +110,7 @@ func TestPostgresIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(Postgres).Exec(s, singleMap("ids", []int{1, 2}))
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -116,8 +118,8 @@ func TestPostgresIn(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN ($1, $2)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -134,7 +136,7 @@ func TestPostgresInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(Postgres).ExecNamed(s, singleMap("ids", []int{1, 2}))
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -142,8 +144,8 @@ func TestPostgresInNamed(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (:ids__1, :ids__2)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -160,7 +162,7 @@ func TestPostgresInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(Postgres).Exec(s, singleMap("ids", 1))
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -168,8 +170,8 @@ func TestPostgresInWithSingleValue(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN ($1)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -183,7 +185,7 @@ func TestPostgresInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(Postgres).ExecNamed(s, singleMap("ids", 1))
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -191,8 +193,8 @@ func TestPostgresInNamedWithSingleValue(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (:ids)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -210,7 +212,7 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -224,8 +226,8 @@ func TestPostgresOtherTemplateFeature(t *testing.T) {
 	WHERE id = $1
 	AND sex = 'MALE'
 	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -241,7 +243,7 @@ func TestPostgresLikeEscape(t *testing.T) {
 	WHERE note1 LIKE /*% infix "note" %*/''
 	OR note2 LIKE /*% prefix "note" %*/''
 	OR note3 LIKE /*% suffix "note" %*/''`
-	sql, args, err := New(Postgres).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
 	if err != nil {
@@ -253,8 +255,8 @@ func TestPostgresLikeEscape(t *testing.T) {
 	WHERE note1 LIKE '%' || $1 || '%' ESCAPE '\'
 	OR note2 LIKE $1 || '%' ESCAPE '\'
 	OR note3 LIKE '%' || $1 ESCAPE '\'`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)

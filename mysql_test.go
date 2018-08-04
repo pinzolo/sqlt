@@ -1,15 +1,17 @@
-package sqlt
+package sqlt_test
 
 import (
 	"testing"
 	"time"
+
+	"github.com/pinzolo/sqlt"
 )
 
 func TestMySQLP(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, args, err := New(MySQL).Exec(s, singleMap("id", 1))
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -17,8 +19,8 @@ func TestMySQLP(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id = ?`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -34,7 +36,7 @@ func TestMySQLRepeatedP(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, args, err := New(MySQL).Exec(s, singleMap("name", "test"))
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,8 +46,8 @@ func TestMySQLRepeatedP(t *testing.T) {
 	WHERE family_name = ?
 	OR given_name = ?
 	OR nick_name = ?`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 3 {
 		t.Errorf("exec failed: values should have 3 length, but got %v", args)
@@ -61,7 +63,7 @@ func TestMySQLPNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id = /*%p "id" %*/1`
-	sql, args, err := New(MySQL).ExecNamed(s, singleMap("id", 1))
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("id", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,8 +71,8 @@ func TestMySQLPNamed(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id = :id`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -86,7 +88,7 @@ func TestMySQLRepeatedPNamed(t *testing.T) {
 	WHERE family_name = /*%p "name" %*/'foo'
 	OR given_name = /*%p "name" %*/'bar'
 	OR nick_name = /*%p "name" %*/'baz'`
-	sql, args, err := New(MySQL).ExecNamed(s, singleMap("name", "test"))
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("name", "test"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -96,8 +98,8 @@ func TestMySQLRepeatedPNamed(t *testing.T) {
 	WHERE family_name = :name
 	OR given_name = :name
 	OR nick_name = :name`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -111,7 +113,7 @@ func TestMySQLIn(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(MySQL).Exec(s, singleMap("ids", []int{1, 2}))
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,8 +121,8 @@ func TestMySQLIn(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (?, ?)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -137,7 +139,7 @@ func TestMySQLInNamed(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(MySQL).ExecNamed(s, singleMap("ids", []int{1, 2}))
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("ids", []int{1, 2}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -145,8 +147,8 @@ func TestMySQLInNamed(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (:ids__1, :ids__2)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 2 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -163,7 +165,7 @@ func TestMySQLInWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(MySQL).Exec(s, singleMap("ids", 1))
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -171,8 +173,8 @@ func TestMySQLInWithSingleValue(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (?)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -186,7 +188,7 @@ func TestMySQLInNamedWithSingleValue(t *testing.T) {
 	s := `SELECT *
 	FROM users
 	WHERE id IN /*%in "ids" %*/(1, 2)`
-	sql, args, err := New(MySQL).ExecNamed(s, singleMap("ids", 1))
+	query, args, err := sqlt.New(sqlt.MySQL).ExecNamed(s, singleMap("ids", 1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -194,8 +196,8 @@ func TestMySQLInNamedWithSingleValue(t *testing.T) {
 	eSQL := `SELECT *
 	FROM users
 	WHERE id IN (:ids)`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 2 length, but got %v", args)
@@ -213,7 +215,7 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 	AND sex = 'MALE'
 	/*%- end%*/
 	ORDER BY /*% .order %*/id`
-	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -227,8 +229,8 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 	WHERE id = ?
 	AND sex = 'MALE'
 	ORDER BY name DESC`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 1 {
 		t.Errorf("exec failed: values should have 1 length, but got %v", args)
@@ -249,7 +251,7 @@ func TestMySQLTime(t *testing.T) {
 	  , /*% time %*/'2000-01-01'
 	  , /*% time %*/'2000-01-01'
 	)`
-	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
@@ -265,8 +267,8 @@ func TestMySQLTime(t *testing.T) {
 	  , ?
 	)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	tm1, ok := args[1].(time.Time)
 	if !ok {
@@ -298,7 +300,7 @@ func TestMySQLNow(t *testing.T) {
 	  , /*% now %*/'2000-01-01'
 	  , /*% now %*/'2000-01-01'
 	)`
-	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"name": "test",
 	})
 	if err != nil {
@@ -314,8 +316,8 @@ func TestMySQLNow(t *testing.T) {
 	  , ?
 	)`
 	et := time.Now()
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	tm1, ok := args[1].(time.Time)
 	if !ok {
@@ -342,7 +344,7 @@ func TestMySQLLikeEscape(t *testing.T) {
 	WHERE note1 LIKE /*% infix "note" %*/''
 	OR note2 LIKE /*% prefix "note" %*/''
 	OR note3 LIKE /*% suffix "note" %*/''`
-	sql, args, err := New(MySQL).Exec(s, map[string]interface{}{
+	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"note": `abc%def_ghi％jkl＿mno[pqr\stu`,
 	})
 	if err != nil {
@@ -354,8 +356,8 @@ func TestMySQLLikeEscape(t *testing.T) {
 	WHERE note1 LIKE '%' || ? || '%' ESCAPE '\'
 	OR note2 LIKE ? || '%' ESCAPE '\'
 	OR note3 LIKE '%' || ? ESCAPE '\'`
-	if eSQL != sql {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, sql)
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 	if len(args) != 3 {
 		t.Errorf("exec failed: values should have 3 length, but got %v", args)
