@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/pinzolo/sqlt"
-	"github.com/pinzolo/tagt"
 )
 
 func BenchmarkExec(b *testing.B) {
@@ -848,25 +847,26 @@ func TestExecStruct(t *testing.T) {
 		{"bar", Bar{Baz: &baz{}}, "bar.Baz.Value", "interface"},
 	}
 	for _, d := range data {
-		tt := tagt.New(t, d.tag)
-		p := `/*% p "` + d.pArg + `" %*/''`
-		s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
-		query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
-			d.name: d.value,
+		t.Run(d.tag, func(t *testing.T) {
+			p := `/*% p "` + d.pArg + `" %*/''`
+			s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
+			query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+				d.name: d.value,
+			})
+			if err != nil {
+				t.Error(err)
+			}
+			eSQL := `SELECT * FROM users WHERE first_name = $1 OR last_name = $1`
+			if eSQL != query {
+				t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+			}
+			if len(args) != 1 {
+				t.Errorf("exec failed: values should have 1 length, but got %v", args)
+			}
+			if args[0] != "Alex" {
+				t.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0])
+			}
 		})
-		if err != nil {
-			t.Error(err)
-		}
-		eSQL := `SELECT * FROM users WHERE first_name = $1 OR last_name = $1`
-		if eSQL != query {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
-		}
-		if len(args) != 1 {
-			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
-		}
-		if args[0] != "Alex" {
-			tt.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0])
-		}
 	}
 }
 
@@ -888,28 +888,29 @@ func TestExecNamedStruct(t *testing.T) {
 		{"bar", Bar{Baz: &baz{}}, "bar.Baz.Value", "bar__Baz__Value", "interface"},
 	}
 	for _, d := range data {
-		tt := tagt.New(t, d.tag)
-		p := `/*% p "` + d.pArg + `" %*/''`
-		s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
-		query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
-			d.name: d.value,
+		t.Run(d.tag, func(t *testing.T) {
+			p := `/*% p "` + d.pArg + `" %*/''`
+			s := fmt.Sprintf(`SELECT * FROM users WHERE first_name = %s OR last_name = %s`, p, p)
+			query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
+				d.name: d.value,
+			})
+			if err != nil {
+				t.Error(err)
+			}
+			eSQL := fmt.Sprintf(`SELECT * FROM users WHERE first_name = :%s OR last_name = :%s`, d.argName, d.argName)
+			if eSQL != query {
+				t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+			}
+			if len(args) != 1 {
+				t.Errorf("exec failed: values should have 1 length, but got %v", args)
+			}
+			if args[0].Name != d.argName {
+				t.Errorf("exec failed: expected args name %q, but got %q", "foo__Value", args[0].Name)
+			}
+			if s, ok := args[0].Value.(string); !ok || s != "Alex" {
+				t.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0].Value)
+			}
 		})
-		if err != nil {
-			t.Error(err)
-		}
-		eSQL := fmt.Sprintf(`SELECT * FROM users WHERE first_name = :%s OR last_name = :%s`, d.argName, d.argName)
-		if eSQL != query {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
-		}
-		if len(args) != 1 {
-			tt.Errorf("exec failed: values should have 1 length, but got %v", args)
-		}
-		if args[0].Name != d.argName {
-			tt.Errorf("exec failed: expected args name %q, but got %q", "foo__Value", args[0].Name)
-		}
-		if s, ok := args[0].Value.(string); !ok || s != "Alex" {
-			tt.Errorf("exec failed: expected value %q, but got %q", "Alex", args[0].Value)
-		}
 	}
 }
 
@@ -931,18 +932,19 @@ func TestExecStructError(t *testing.T) {
 		{Bar{Foo: Foo{"Alex"}}, "baz.Foo.Value", "unknown param: baz", "unknown root"},
 	}
 	for _, d := range data {
-		tt := tagt.New(t, d.tag)
-		s := `SELECT * FROM users WHERE name = /*% p "` + d.pArg + `" %*/''`
-		query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
-			"bar": d.value,
+		t.Run(d.tag, func(t *testing.T) {
+			s := `SELECT * FROM users WHERE name = /*% p "` + d.pArg + `" %*/''`
+			query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+				"bar": d.value,
+			})
+			if err == nil {
+				t.Error("should raise error")
+			}
+			eSQL := fmt.Sprintf(`SELECT * FROM users WHERE name = /*! %s */`, d.errMsg)
+			if eSQL != query {
+				t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+			}
 		})
-		if err == nil {
-			tt.Error("should raise error")
-		}
-		eSQL := fmt.Sprintf(`SELECT * FROM users WHERE name = /*! %s */`, d.errMsg)
-		if eSQL != query {
-			tt.Errorf("exec failed: expected %s, but got %s", eSQL, query)
-		}
 	}
 }
 
