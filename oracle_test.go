@@ -189,10 +189,10 @@ func TestOracleOtherTemplateFeature(t *testing.T) {
 SELECT *
 FROM users
 WHERE id = /*%p "id" %*/1
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	query, args, err := sqlt.New(sqlt.Oracle).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",

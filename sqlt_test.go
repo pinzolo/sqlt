@@ -64,10 +64,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -111,10 +111,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -189,10 +189,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% pp "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -210,10 +210,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% pp "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -231,10 +231,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "userName" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -263,10 +263,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "idList" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% .order %*/id`
+ORDER BY /*% val "order" %*/id`
 	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -755,6 +755,39 @@ OFFSET 3 LIMIT 50`
 	}
 	if args[0] != `Alex` {
 		t.Error("exec failed: embedded function should not be overwritten")
+	}
+}
+
+func TestValFunc(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+ORDER BY /*% val "col" %*/id`
+	data := []struct {
+		col   string
+		valid bool
+		tag   string
+	}{
+		{"name", true, "valid"},
+		{"name'", false, "single quotation"},
+		{"name;", false, "semi colon"},
+		{"name--", false, "line comment"},
+		{"name/*", false, "block comment begin"},
+		{"name*/", false, "block comment end"},
+	}
+	for _, d := range data {
+		t.Run(d.tag, func(t *testing.T) {
+			_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{"col": d.col})
+			if d.valid {
+				if err != nil {
+					t.Error(err)
+				}
+			} else {
+				if err == nil {
+					t.Error("should raise error on value contains prohibited character")
+				}
+			}
+		})
 	}
 }
 

@@ -22,10 +22,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if val "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end %*/
-ORDER BY /*% .order %*/id
+ORDER BY /*% val "order" %*/id
 ```
 
 ### Go code
@@ -34,7 +34,8 @@ ORDER BY /*% .order %*/id
 * func `in` deploy slice values to parentheses and placeholders.
 * func `time` returns current time and cache it, this func always same time in same template.
 * func `now` returns current time each calling.
-* func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.
+* func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.  
+* func `val` or `value` or `v` replace to value, and check that value is safe. If value contains single quotation, semi-colon, line comment(--) and block comment (/*, */), returns error.
 * If you want customized time in template, you can set `TimeFunc`.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
