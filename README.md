@@ -40,7 +40,7 @@ ORDER BY /*% val "order" %*/id
  	* Single quotation
 	* Semi colon
 	* Line comment (--)
-	* Block comment (/*, */)
+	* Block comment (/* or */)
 * If you want to use customized time in template, you can set `TimeFunc`.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
