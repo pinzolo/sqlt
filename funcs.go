@@ -27,6 +27,21 @@ func (c *context) paramWithFunc(name string, fn func(string, interface{}) (strin
 	return c.Placeholder(nm)
 }
 
+func (c *context) val(name string) interface{} {
+	p, err := c.Get(name)
+	if err != nil {
+		c.err = err
+		return nil
+	}
+	if s, ok := p.value.(string); ok {
+		if err = safe(s); err != nil {
+			c.err = fmt.Errorf("%q contains prohibited character(%s)", name, err.Error())
+			return nil
+		}
+	}
+	return p.value
+}
+
 func (c *context) param(name string) string {
 	return c.paramWithFunc(name, nil)
 }
@@ -125,6 +140,9 @@ func (c *context) isEscapee(r rune) bool {
 
 func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
 	fm := template.FuncMap(funcs)
+	fm["value"] = c.val
+	fm["val"] = c.val
+	fm["v"] = c.val
 	fm["param"] = c.param
 	fm["p"] = c.param
 	fm["in"] = c.in
@@ -135,4 +153,17 @@ func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
 	fm["suffix"] = c.suffix
 	fm["escape"] = c.escapeLike
 	return fm
+}
+
+func safe(s string) error {
+	if strings.Contains(s, "'") {
+		return fmt.Errorf("single quotation")
+	}
+	if strings.Contains(s, ";") {
+		return fmt.Errorf("semi colon")
+	}
+	if strings.Contains(s, "--") || strings.Contains(s, "/*") || strings.Contains(s, "*/") {
+		return fmt.Errorf("comment")
+	}
+	return nil
 }
