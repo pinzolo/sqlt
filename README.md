@@ -35,7 +35,7 @@ ORDER BY /*% val "order" %*/id
 * func `time` returns current time and cache it, this func always same time in same template.
 * func `now` returns current time each calling.
 * func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.  
-* If you want to use value for building SQL only, you use `value`, `val`, `v` func. This func check that value contains prohibited character(s) for avoiding SQL injection.  
+* If you want to use value for building SQL only, you use `val`(or `value`, `v`) func. This func check that value contains prohibited character(s) for avoiding SQL injection.  
   Prohibited characters are:
  	* Single quotation
 	* Semi colon
