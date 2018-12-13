@@ -8,7 +8,7 @@
 
 ## Description
 
-Simple SQL template.
+Simple SQL template for 2 way SQL.
 
 ## Sample (PostgreSQL)
 
@@ -35,8 +35,13 @@ ORDER BY /*% val "order" %*/id
 * func `time` returns current time and cache it, this func always same time in same template.
 * func `now` returns current time each calling.
 * func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.  
-* func `val` or `value` or `v` replace to value, and check that value is safe. If value contains single quotation, semi-colon, line comment(--) and block comment (/*, */), returns error.
-* If you want customized time in template, you can set `TimeFunc`.
+* If you want to use value for building SQL only, you use `value`, `val`, `v` func. This func check that value contains prohibited character(s) for avoiding SQL injection.  
+  Prohibited characters are:
+ 	* Single quotation
+	* Semi colon
+	* Line comment (--)
+	* Block comment (/*, */)
+* If you want to use customized time in template, you can set `TimeFunc`.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
 ```go
@@ -88,7 +93,7 @@ $ go get github.com/pinzolo/sqlt
 
 Go 1.9 or later
 
-### Databses
+### Databases
 
 * PostgreSQL
 * MySQL
