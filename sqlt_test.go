@@ -405,10 +405,9 @@ INSERT INTO users (
   , /*% time %*/'2000-01-01'
   , /*% time %*/'2000-01-01'
 )`
-	st := sqlt.New(sqlt.Postgres)
-	st.TimeFunc = func() time.Time {
+	st := sqlt.New(sqlt.Postgres).WithOptions(sqlt.TimeFunc(func() time.Time {
 		return bt.AddDate(0, 0, 1)
-	}
+	}))
 	query, args, err := st.Exec(s, map[string]interface{}{
 		"name": "test",
 	})
