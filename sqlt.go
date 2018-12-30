@@ -25,7 +25,7 @@ var (
 
 // Config is configuration for executing template.
 type config struct {
-	timeFn func() time.Time
+	timeFunc func() time.Time
 }
 
 // SQLTemplate is template struct.
@@ -67,20 +67,10 @@ func (st *SQLTemplate) WithOptions(opts ...Option) *SQLTemplate {
 	return st
 }
 
-// TimeFunc used `time` and `now` function in template.
-// This func should return current time.
-// If this function is not set, used `time.Now()` as default function.
-func (st *SQLTemplate) timeFunc() func() time.Time {
-	if st.config.timeFn == nil {
-		return time.Now
-	}
-	return st.config.timeFn
-}
-
 // Exec executes given template with given map parameters.
 // This function replaces to normal placeholder.
 func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []interface{}, error) {
-	c := newContext(false, st.dialect, st.timeFunc(), m)
+	c := newContext(false, st.dialect, m, st.config)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
@@ -91,7 +81,7 @@ func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []in
 // ExecNamed executes given template with given map parameters.
 // This function replaces to named placeholder.
 func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
-	c := newContext(true, st.dialect, st.timeFunc(), m)
+	c := newContext(true, st.dialect, m, st.config)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err

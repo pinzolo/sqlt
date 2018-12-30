@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -32,26 +31,24 @@ type context struct {
 	params  []*param
 	args    []*param
 	timer   *timer
+	config  *config
 	err     error
 }
 
-func newContext(named bool, dialect Dialect, timeFn func() time.Time, m map[string]interface{}) *context {
+func newContext(named bool, dialect Dialect, m map[string]interface{}, conf *config) *context {
 	params := make([]*param, len(m))
 	i := 0
 	for k, v := range m {
 		params[i] = newParam(k, v)
 		i++
 	}
-	fn := time.Now
-	if timeFn != nil {
-		fn = timeFn
-	}
 	return &context{
 		named:   named,
 		dialect: dialect,
 		params:  params,
 		args:    make([]*param, 0),
-		timer:   newTimer(fn),
+		timer:   newTimer(conf.timeFunc),
+		config:  conf,
 	}
 }
 

@@ -10,6 +10,12 @@ type timer struct {
 }
 
 func newTimer(fn func() time.Time) *timer {
+	if fn == nil {
+		return &timer{
+			fn:     time.Now,
+			nowCnt: 1,
+		}
+	}
 	return &timer{fn: fn, nowCnt: 1}
 }
 
