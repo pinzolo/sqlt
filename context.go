@@ -190,7 +190,11 @@ func (c *context) Placeholder(name string) string {
 	return c.dialect.Placeholder()
 }
 
+func (c *context) annotation(s string) string {
+	return "/*# " + s + " */"
+}
+
 func (c *context) errorOutput(err error) string {
 	c.err = err
-	return fmt.Sprintf("/*! %s */", err.Error())
+	return c.annotation(err.Error())
 }

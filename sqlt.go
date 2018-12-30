@@ -25,7 +25,8 @@ var (
 
 // Config is configuration for executing template.
 type config struct {
-	timeFunc func() time.Time
+	timeFunc   func() time.Time
+	annotative bool
 }
 
 // SQLTemplate is template struct.
@@ -75,6 +76,9 @@ func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []in
 	if err != nil {
 		return "", nil, err
 	}
+	if c.err != nil && !c.config.annotative {
+		return "", nil, c.err
+	}
 	return s, c.Args(), c.err
 }
 
@@ -85,6 +89,9 @@ func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string,
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
+	}
+	if c.err != nil && !c.config.annotative {
+		return "", nil, c.err
 	}
 	return s, c.NamedArgs(), c.err
 }

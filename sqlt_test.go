@@ -234,7 +234,7 @@ AND name = /*% p "userName" %*/'John Doe'
 AND sex = 'MALE'
 /*%- end%*/
 ORDER BY /*% val "order" %*/id`
-	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -242,17 +242,6 @@ ORDER BY /*% val "order" %*/id`
 	})
 	if err == nil {
 		t.Errorf("exec failed: should raise error when unknown param")
-	}
-
-	eSQL := `
-SELECT *
-FROM users
-WHERE id IN ($1, $2, $3)
-AND name = /*! unknown param: userName */
-AND sex = 'MALE'
-ORDER BY name DESC`
-	if eSQL != query {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 }
 
@@ -266,7 +255,7 @@ AND name = /*% p "name" %*/'John Doe'
 AND sex = 'MALE'
 /*%- end%*/
 ORDER BY /*% val "order" %*/id`
-	query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
 		"onlyMale": true,
@@ -274,17 +263,6 @@ ORDER BY /*% val "order" %*/id`
 	})
 	if err == nil {
 		t.Errorf("exec failed: should raise error when unknown param")
-	}
-
-	eSQL := `
-SELECT *
-FROM users
-WHERE id IN /*! unknown param: idList */
-AND name = $1
-AND sex = 'MALE'
-ORDER BY name DESC`
-	if eSQL != query {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 	}
 }
 
@@ -294,29 +272,11 @@ SELECT *
 FROM users
 WHERE name IN /*% in "keywords" %*/('')
 OR email IN /*% in "keywords" %*/('')`
-	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"keywords": []string{"foo", "bar"},
 	})
 	if err != nil {
 		t.Error(err)
-	}
-
-	eSQL := `
-SELECT *
-FROM users
-WHERE name IN ($1, $2)
-OR email IN ($1, $2)`
-	if eSQL != query {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
-	}
-	if len(args) != 2 {
-		t.Errorf("exec failed: values should have 2 length, but got %v", args)
-	}
-	if isInvalidString(args[0], "foo") {
-		t.Errorf("exec failed: values should have %q, but got %v", "foo", args)
-	}
-	if isInvalidString(args[1], "bar") {
-		t.Errorf("exec failed: values should have %q, but got %v", "bar", args)
 	}
 }
 
@@ -933,13 +893,13 @@ func TestExecStructError(t *testing.T) {
 	for _, d := range data {
 		t.Run(d.tag, func(t *testing.T) {
 			s := `SELECT * FROM users WHERE name = /*% p "` + d.pArg + `" %*/''`
-			query, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+			query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(s, map[string]interface{}{
 				"bar": d.value,
 			})
 			if err == nil {
 				t.Error("should raise error")
 			}
-			eSQL := fmt.Sprintf(`SELECT * FROM users WHERE name = /*! %s */`, d.errMsg)
+			eSQL := fmt.Sprintf(`SELECT * FROM users WHERE name = /*# %s */`, d.errMsg)
 			if eSQL != query {
 				t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 			}

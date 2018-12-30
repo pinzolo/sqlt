@@ -12,4 +12,11 @@ var (
 			conf.timeFunc = fn
 		}
 	}
+
+	// Annotation is option for enabling annotative in template.
+	Annotation = func() Option {
+		return func(conf *config) {
+			conf.annotative = true
+		}
+	}
 )
