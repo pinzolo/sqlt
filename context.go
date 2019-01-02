@@ -61,7 +61,7 @@ func (c *context) Get(name string) (*param, error) {
 			return p, nil
 		}
 	}
-	return nil, fmt.Errorf("unknown param: %s", name)
+	return nil, fmt.Errorf("%q is unknown param", name)
 }
 
 func (c *context) Dig(names []string) (*param, error) {
@@ -72,7 +72,7 @@ func (c *context) Dig(names []string) (*param, error) {
 
 	qname := names[0]
 	if p.value == nil {
-		return nil, fmt.Errorf("nil value: %s", qname)
+		return nil, fmt.Errorf("%q is nil value", qname)
 	}
 	v := reflect.ValueOf(p.value)
 	for _, name := range names[1:] {
@@ -83,7 +83,7 @@ func (c *context) Dig(names []string) (*param, error) {
 		qname = qname + "." + name
 		if v.Kind() == reflect.Ptr {
 			if v.IsNil() {
-				return nil, fmt.Errorf("nil value: %s", qname)
+				return nil, fmt.Errorf("%q is nil value", qname)
 			}
 		}
 	}
@@ -107,7 +107,7 @@ func findValue(val reflect.Value, name string, prefix string) (reflect.Value, er
 func findMethodValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
 	// Finding method raises panic when Interface and nil.
 	if val.Kind() == reflect.Interface && val.IsNil() {
-		return val, fmt.Errorf("nil value: %s", prefix)
+		return val, fmt.Errorf("%q is nil value", prefix)
 	}
 
 	v := val.MethodByName(name)
@@ -117,7 +117,7 @@ func findMethodValue(val reflect.Value, name string, prefix string) (reflect.Val
 	}
 	t := v.Type()
 	if t.NumIn() != 0 || t.NumOut() != 1 {
-		return v, fmt.Errorf("invalid method: %s", qname)
+		return v, fmt.Errorf("%q is invalid method", qname)
 	}
 	v = v.Call([]reflect.Value{})[0]
 	return v, nil
@@ -131,13 +131,13 @@ func findFieldValue(val reflect.Value, name string, prefix string) (reflect.Valu
 
 	// Finding field raises panic when not struct
 	if val.Kind() != reflect.Struct {
-		return val, fmt.Errorf("not struct: %s", prefix)
+		return val, fmt.Errorf("%q is not struct", prefix)
 	}
 
 	v := val.FieldByName(name)
 	qname := prefix + "." + name
 	if !v.IsValid() {
-		return v, fmt.Errorf("unknown param: %s", qname)
+		return v, fmt.Errorf("%q is unknown param", qname)
 	}
 	return v, nil
 }
@@ -191,10 +191,13 @@ func (c *context) Placeholder(name string) string {
 }
 
 func (c *context) annotation(s string) string {
-	return "/*# " + s + " */"
+	if c.config.annotative {
+		return "/*# " + s + " */"
+	}
+	return ""
 }
 
 func (c *context) errorOutput(err error) string {
 	c.err = err
-	return c.annotation(err.Error())
+	return c.annotation("error: " + err.Error())
 }

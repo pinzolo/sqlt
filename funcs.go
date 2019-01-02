@@ -24,10 +24,10 @@ func (c *context) paramWithFunc(name string, fn func(string, interface{}) (strin
 	} else {
 		c.AddArg(nm, v)
 	}
-	return c.Placeholder(nm)
+	return c.Placeholder(nm) + c.annotation(name)
 }
 
-func (c *context) val(name string) interface{} {
+func (c *context) get(name string) interface{} {
 	p, err := c.Get(name)
 	if err != nil {
 		c.err = err
@@ -40,6 +40,19 @@ func (c *context) val(name string) interface{} {
 		}
 	}
 	return p.value
+}
+
+func (c *context) out(name string) string {
+	p, err := c.Get(name)
+	if err != nil {
+		return c.errorOutput(err)
+	}
+
+	s := fmt.Sprintf("%v", p.value)
+	if err = safe(s); err != nil {
+		return c.errorOutput(fmt.Errorf("%q contains prohibited character(%s)", name, err.Error()))
+	}
+	return s + c.annotation(name)
 }
 
 func (c *context) param(name string) string {
@@ -68,7 +81,7 @@ func (c *context) in(name string) string {
 		}
 		placeholders[i] = c.Placeholder(argName)
 	}
-	return "(" + strings.Join(placeholders, ", ") + ")"
+	return "(" + strings.Join(placeholders, ", ") + ")" + c.annotation(name)
 }
 
 func (c *context) time() string {
@@ -140,9 +153,9 @@ func (c *context) isEscapee(r rune) bool {
 
 func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
 	fm := template.FuncMap(funcs)
-	fm["value"] = c.val
-	fm["val"] = c.val
-	fm["v"] = c.val
+	fm["get"] = c.get
+	fm["out"] = c.out
+	fm["o"] = c.out
 	fm["param"] = c.param
 	fm["p"] = c.param
 	fm["in"] = c.in

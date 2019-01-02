@@ -192,10 +192,10 @@ func TestMySQLOtherTemplateFeature(t *testing.T) {
 SELECT *
 FROM users
 WHERE id = /*%p "id" %*/1
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% get "order" %*/id`
 	query, args, err := sqlt.New(sqlt.MySQL).Exec(s, map[string]interface{}{
 		"id":       1,
 		"order":    "name DESC",

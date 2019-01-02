@@ -16,10 +16,10 @@ SELECT *
 FROM users
 WHERE id = /*%p "id" %*/1
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
-/*%- end%*/
-ORDER BY /*% .order %*/id`
+/*%- end %*/
+ORDER BY /*% out "order"" %*/id`
 		m := map[string]interface{}{
 			"id":       1,
 			"order":    "name DESC",
@@ -40,10 +40,10 @@ SELECT *
 FROM users
 WHERE id = /*%p "id" %*/1
 AND name = /*% p "name" %*/'John Doe'
-/*%- if .onlyMale %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
-/*%- end%*/
-ORDER BY /*% .order %*/id`
+/*%- end %*/
+ORDER BY /*% out "order"" %*/id`
 		m := map[string]interface{}{
 			"id":       1,
 			"order":    "name DESC",
@@ -63,10 +63,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
-/*%- end%*/
-ORDER BY /*% val "order" %*/id`
+/*%- end %*/
+ORDER BY /*% out "order" %*/id`
 	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -110,10 +110,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% out "order" %*/id`
 	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -188,10 +188,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% pp "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% out "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -209,10 +209,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% pp "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% out "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -230,10 +230,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "userName" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% out "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -251,10 +251,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "idList" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end%*/
-ORDER BY /*% val "order" %*/id`
+ORDER BY /*% out "order" %*/id`
 	_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 		"ids":      []int{1, 2, 3},
 		"order":    "name DESC",
@@ -716,11 +716,11 @@ OFFSET 3 LIMIT 50`
 	}
 }
 
-func TestValFunc(t *testing.T) {
+func TestGetFunc(t *testing.T) {
 	s := `
 SELECT *
 FROM users
-ORDER BY /*% val "col" %*/id`
+ORDER BY /*% get "col" %*/id`
 	data := []struct {
 		col   string
 		valid bool
@@ -744,6 +744,94 @@ ORDER BY /*% val "col" %*/id`
 				if err == nil {
 					t.Error("should raise error on value contains prohibited character")
 				}
+			}
+		})
+	}
+}
+
+func TestOutFunc(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+ORDER BY /*% out "col" %*/id`
+	data := []struct {
+		col   string
+		valid bool
+		tag   string
+	}{
+		{"name", true, "valid"},
+		{"name'", false, "single quotation"},
+		{"name;", false, "semi colon"},
+		{"name--", false, "line comment"},
+		{"name/*", false, "block comment begin"},
+		{"name*/", false, "block comment end"},
+	}
+	for _, d := range data {
+		t.Run(d.tag, func(t *testing.T) {
+			_, _, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{"col": d.col})
+			if d.valid {
+				if err != nil {
+					t.Error(err)
+				}
+			} else {
+				if err == nil {
+					t.Error("should raise error on value contains prohibited character")
+				}
+			}
+		})
+	}
+}
+
+func TestAnnotation(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(0) 
+/*%- if get "sex" %*/
+AND sex = /*% p "sex" %*/
+/*%- end %*/
+AND name LIKE /*% infix "name" %*/''
+ORDER BY /*% out "col" %*/id`
+	query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(s, map[string]interface{}{
+		"ids":  []int{1, 2, 3},
+		"sex":  "MALE",
+		"name": "foo",
+		"col":  "name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN ($1, $2, $3)/*# ids */
+AND sex = $4/*# sex */
+AND name LIKE '%' || $5/*# name */ || '%' ESCAPE '\'
+ORDER BY name/*# col */`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+}
+
+func TestAnnotationError(t *testing.T) {
+	data := []struct {
+		tmpl string
+		val  string
+		want string
+		tag  string
+	}{
+		{`/*% p "bar" %*/`, "test", `/*# error: "bar" is unknown param */`, "name not found"},
+		{`/*% out "foo" %*/`, "test;", `/*# error: "foo" contains prohibited character(semi colon) */`, "prohibited character"},
+		{`/*% get "foo" %*/`, "test;", "<no value>", "get does not annotate error"},
+	}
+	for _, d := range data {
+		t.Run(d.tag, func(t *testing.T) {
+			query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(d.tmpl, map[string]interface{}{"foo": d.val})
+			if err == nil {
+				t.Error("should raise error")
+			}
+			if d.want != query {
+				t.Errorf("exec failed: expected %v, but got %s", d.want, query)
 			}
 		})
 	}
@@ -880,15 +968,15 @@ func TestExecStructError(t *testing.T) {
 		errMsg string
 		tag    string
 	}{
-		{Bar{Foo: Foo{"Alex"}}, "bar.Qux.Value", "unknown param: bar.Qux", "unknown"},
-		{Bar{Foo: Foo{"Alex"}}, "bar.Value.Length", "not struct: bar.Value", "not struct"},
-		{Bar{}, "bar.FooPtr.Value", "nil value: bar.FooPtr", "nil field"},
-		{Bar{}, "bar.PropPtr.Value", "nil value: bar.PropPtr", "nil getter"},
-		{Bar{}, "bar.Baz.Value", "nil value: bar.Baz", "nil interface"},
-		{Bar{Foo: Foo{"Alex"}}, "bar.FnIn.Value", "invalid method: bar.FnIn", "invalid in arg num method"},
-		{Bar{Foo: Foo{"Alex"}}, "bar.FnOut2.Value", "invalid method: bar.FnOut2", "invalid out val num method"},
-		{nil, "bar.FooPtr.Value", "nil value: bar", "nil root"},
-		{Bar{Foo: Foo{"Alex"}}, "baz.Foo.Value", "unknown param: baz", "unknown root"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.Qux.Value", `error: "bar.Qux" is unknown param`, "unknown"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.Value.Length", `error: "bar.Value" is not struct`, "not struct"},
+		{Bar{}, "bar.FooPtr.Value", `error: "bar.FooPtr" is nil value`, "nil field"},
+		{Bar{}, "bar.PropPtr.Value", `error: "bar.PropPtr" is nil value`, "nil getter"},
+		{Bar{}, "bar.Baz.Value", `error: "bar.Baz" is nil value`, "nil interface"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.FnIn.Value", `error: "bar.FnIn" is invalid method`, "invalid in arg num method"},
+		{Bar{Foo: Foo{"Alex"}}, "bar.FnOut2.Value", `error: "bar.FnOut2" is invalid method`, "invalid out get num method"},
+		{nil, "bar.FooPtr.Value", `error: "bar" is nil value`, "nil root"},
+		{Bar{Foo: Foo{"Alex"}}, "baz.Foo.Value", `error: "baz" is unknown param`, "unknown root"},
 	}
 	for _, d := range data {
 		t.Run(d.tag, func(t *testing.T) {
