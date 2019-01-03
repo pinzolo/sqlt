@@ -44,7 +44,7 @@ ORDER BY /*% out "order" %*/id
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
 ```go
-// sql is generated SQL from template.
+// query is generated SQL from template.
 // args are arguments for generated SQL.
 query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"ids":      []int{1, 2, 3},
