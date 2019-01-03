@@ -25,7 +25,26 @@ var (
 
 // Config is configuration for executing template.
 type config struct {
-	timeFn func() time.Time
+	timeFunc   func() time.Time
+	annotative bool
+}
+
+func (conf *config) clone() *config {
+	return &config{
+		timeFunc:   conf.timeFunc,
+		annotative: conf.annotative,
+	}
+}
+
+func (conf *config) apply(opts []Option) *config {
+	if len(opts) > 0 {
+		cf := conf.clone()
+		for _, opt := range opts {
+			opt(cf)
+		}
+		return cf
+	}
+	return conf
 }
 
 // SQLTemplate is template struct.
@@ -67,34 +86,32 @@ func (st *SQLTemplate) WithOptions(opts ...Option) *SQLTemplate {
 	return st
 }
 
-// TimeFunc used `time` and `now` function in template.
-// This func should return current time.
-// If this function is not set, used `time.Now()` as default function.
-func (st *SQLTemplate) timeFunc() func() time.Time {
-	if st.config.timeFn == nil {
-		return time.Now
-	}
-	return st.config.timeFn
-}
-
 // Exec executes given template with given map parameters.
 // This function replaces to normal placeholder.
-func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []interface{}, error) {
-	c := newContext(false, st.dialect, st.timeFunc(), m)
+func (st *SQLTemplate) Exec(text string, m map[string]interface{}, opts ...Option) (string, []interface{}, error) {
+	conf := st.config.apply(opts)
+	c := newContext(false, st.dialect, m, conf)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
+	}
+	if c.err != nil && !c.config.annotative {
+		return "", nil, c.err
 	}
 	return s, c.Args(), c.err
 }
 
 // ExecNamed executes given template with given map parameters.
 // This function replaces to named placeholder.
-func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
-	c := newContext(true, st.dialect, st.timeFunc(), m)
+func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}, opts ...Option) (string, []sql.NamedArg, error) {
+	conf := st.config.apply(opts)
+	c := newContext(true, st.dialect, m, conf)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
+	}
+	if c.err != nil && !c.config.annotative {
+		return "", nil, c.err
 	}
 	return s, c.NamedArgs(), c.err
 }
