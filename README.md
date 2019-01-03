@@ -22,10 +22,10 @@ SELECT *
 FROM users
 WHERE id IN /*% in "ids" %*/(1, 2)
 AND name = /*% p "name" %*/'John Doe'
-/*%- if val "onlyMale" %*/
+/*%- if get "onlyMale" %*/
 AND sex = 'MALE'
 /*%- end %*/
-ORDER BY /*% val "order" %*/id
+ORDER BY /*% out "order" %*/id
 ```
 
 ### Go code
@@ -35,13 +35,12 @@ ORDER BY /*% val "order" %*/id
 * func `time` returns current time and cache it, this func always same time in same template.
 * func `now` returns current time each calling.
 * func `escape`, `prefix`, `inffix`, `suffix` replace to placeholder with escape for `LIKE` keyword.  
-* If you want to use value for building SQL only or embedding value to SQL directly, you must use `val`(or `value`, `v`) func. This func check that value contains prohibited character(s) for avoiding SQL injection.  
+* If you want to use value for building SQL only or embedding value to SQL directly, you must use `get` or `out` func. This func check that value contains prohibited character(s) for avoiding SQL injection.`out` is annotative, but `get` is not annotative.  
   Prohibited characters are:
  	* Single quotation
 	* Semi colon
 	* Line comment (--)
 	* Block comment (/* or */)
-* If you want to use customized time in template, you can set `TimeFunc`.
 * If database driver that you use supports `sql.NamedArg`, you should call `ExecNamed` func.
 
 ```go
@@ -53,8 +52,13 @@ query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
 	"onlyMale": false,
 	"name":     "Alex",
 })
-rows, err := db.Query(sql, args...)
+rows, err := db.Query(query, args...)
 ```
+
+#### options
+
+* `TimeFunc`: For using customized time in template.
+* `Annotation`: Output meta data for debugging to rendered SQL.
 
 ### Generated SQL
 
