@@ -782,61 +782,6 @@ ORDER BY /*% out "col" %*/id`
 	}
 }
 
-func TestAnnotation(t *testing.T) {
-	s := `
-SELECT *
-FROM users
-WHERE id IN /*% in "ids" %*/(0) 
-/*%- if get "sex" %*/
-AND sex = /*% p "sex" %*/
-/*%- end %*/
-AND name LIKE /*% infix "name" %*/''
-ORDER BY /*% out "col" %*/id`
-	query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(s, map[string]interface{}{
-		"ids":  []int{1, 2, 3},
-		"sex":  "MALE",
-		"name": "foo",
-		"col":  "name",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	eSQL := `
-SELECT *
-FROM users
-WHERE id IN ($1, $2, $3)/*# ids */
-AND sex = $4/*# sex */
-AND name LIKE '%' || $5/*# name */ || '%' ESCAPE '\'
-ORDER BY name/*# col */`
-	if eSQL != query {
-		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
-	}
-}
-
-func TestAnnotationError(t *testing.T) {
-	data := []struct {
-		tmpl string
-		val  string
-		want string
-		tag  string
-	}{
-		{`/*% p "bar" %*/`, "test", `/*# error: "bar" is unknown param */`, "name not found"},
-		{`/*% out "foo" %*/`, "test;", `/*# error: "foo" contains prohibited character(semi colon) */`, "prohibited character"},
-		{`/*% get "foo" %*/`, "test;", "<no value>", "get does not annotate error"},
-	}
-	for _, d := range data {
-		t.Run(d.tag, func(t *testing.T) {
-			query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(d.tmpl, map[string]interface{}{"foo": d.val})
-			if err == nil {
-				t.Error("should raise error")
-			}
-			if d.want != query {
-				t.Errorf("exec failed: expected %v, but got %s", d.want, query)
-			}
-		})
-	}
-}
-
 type Foo struct {
 	Value string
 }
@@ -992,6 +937,186 @@ func TestExecStructError(t *testing.T) {
 				t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
 			}
 		})
+	}
+}
+
+func TestAnnotation(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(0) 
+/*%- if get "sex" %*/
+AND sex = /*% p "sex" %*/
+/*%- end %*/
+AND name LIKE /*% infix "name" %*/''
+ORDER BY /*% out "col" %*/id`
+	query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(s, map[string]interface{}{
+		"ids":  []int{1, 2, 3},
+		"sex":  "MALE",
+		"name": "foo",
+		"col":  "name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN ($1, $2, $3)/*# ids */
+AND sex = $4/*# sex */
+AND name LIKE '%' || $5/*# name */ || '%' ESCAPE '\'
+ORDER BY name/*# col */`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+}
+
+func TestAnnotationNamed(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE id IN /*% in "ids" %*/(0) 
+/*%- if get "sex" %*/
+AND sex = /*% p "sex" %*/
+/*%- end %*/
+AND name LIKE /*% infix "name" %*/''
+ORDER BY /*% out "col" %*/id`
+	query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).ExecNamed(s, map[string]interface{}{
+		"ids":  []int{1, 2, 3},
+		"sex":  "MALE",
+		"name": "foo",
+		"col":  "name",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE id IN (:ids__1, :ids__2, :ids__3)/*# ids */
+AND sex = :sex/*# sex */
+AND name LIKE '%' || :name/*# name */ || '%' ESCAPE '\'
+ORDER BY name/*# col */`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+}
+
+func TestAnnotationError(t *testing.T) {
+	data := []struct {
+		tmpl string
+		val  string
+		want string
+		tag  string
+	}{
+		{`/*% p "bar" %*/`, "test", `/*# error: "bar" is unknown param */`, "name not found"},
+		{`/*% out "foo" %*/`, "test;", `/*# error: "foo" contains prohibited character(semi colon) */`, "prohibited character"},
+		{`/*% get "foo" %*/`, "test;", "<no value>", "get does not annotate error"},
+	}
+	for _, d := range data {
+		t.Run(d.tag, func(t *testing.T) {
+			query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).Exec(d.tmpl, map[string]interface{}{"foo": d.val})
+			if err == nil {
+				t.Error("should raise error")
+			}
+			if d.want != query {
+				t.Errorf("exec failed: expected %v, but got %s", d.want, query)
+			}
+		})
+	}
+}
+
+func TestAnnotationErrorNamed(t *testing.T) {
+	data := []struct {
+		tmpl string
+		val  string
+		want string
+		tag  string
+	}{
+		{`/*% p "bar" %*/`, "test", `/*# error: "bar" is unknown param */`, "name not found"},
+		{`/*% out "foo" %*/`, "test;", `/*# error: "foo" contains prohibited character(semi colon) */`, "prohibited character"},
+		{`/*% get "foo" %*/`, "test;", "<no value>", "get does not annotate error"},
+	}
+	for _, d := range data {
+		t.Run(d.tag, func(t *testing.T) {
+			query, _, err := sqlt.New(sqlt.Postgres).WithOptions(sqlt.Annotation()).ExecNamed(d.tmpl, map[string]interface{}{"foo": d.val})
+			if err == nil {
+				t.Error("should raise error")
+			}
+			if d.want != query {
+				t.Errorf("exec failed: expected %v, but got %s", d.want, query)
+			}
+		})
+	}
+}
+
+func TestOnetimeOption(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE id = /*% p "id" %*/0`
+	st := sqlt.New(sqlt.Postgres)
+	query, _, err := st.Exec(s, map[string]interface{}{
+		"id": 1,
+	}, sqlt.Annotation())
+	eSQL1 := `
+SELECT *
+FROM users
+WHERE id = $1/*# id */`
+	if err != nil {
+		t.Error(err)
+	}
+	if eSQL1 != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL1, query)
+	}
+
+	query, _, err = st.Exec(s, map[string]interface{}{
+		"id": 2,
+	})
+	eSQL2 := `
+SELECT *
+FROM users
+WHERE id = $1`
+	if err != nil {
+		t.Error(err)
+	}
+	if eSQL2 != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL2, query)
+	}
+}
+
+func TestOnetimeOptionNamed(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE id = /*% p "id" %*/0`
+	st := sqlt.New(sqlt.Postgres)
+	query, _, err := st.ExecNamed(s, map[string]interface{}{
+		"id": 1,
+	}, sqlt.Annotation())
+	eSQL1 := `
+SELECT *
+FROM users
+WHERE id = :id/*# id */`
+	if err != nil {
+		t.Error(err)
+	}
+	if eSQL1 != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL1, query)
+	}
+
+	query, _, err = st.ExecNamed(s, map[string]interface{}{
+		"id": 2,
+	})
+	eSQL2 := `
+SELECT *
+FROM users
+WHERE id = :id`
+	if err != nil {
+		t.Error(err)
+	}
+	if eSQL2 != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL2, query)
 	}
 }
 

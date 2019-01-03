@@ -29,6 +29,24 @@ type config struct {
 	annotative bool
 }
 
+func (conf *config) clone() *config {
+	return &config{
+		timeFunc:   conf.timeFunc,
+		annotative: conf.annotative,
+	}
+}
+
+func (conf *config) apply(opts []Option) *config {
+	if len(opts) > 0 {
+		cf := conf.clone()
+		for _, opt := range opts {
+			opt(cf)
+		}
+		return cf
+	}
+	return conf
+}
+
 // SQLTemplate is template struct.
 type SQLTemplate struct {
 	dialect Dialect
@@ -70,8 +88,9 @@ func (st *SQLTemplate) WithOptions(opts ...Option) *SQLTemplate {
 
 // Exec executes given template with given map parameters.
 // This function replaces to normal placeholder.
-func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []interface{}, error) {
-	c := newContext(false, st.dialect, m, st.config)
+func (st *SQLTemplate) Exec(text string, m map[string]interface{}, opts ...Option) (string, []interface{}, error) {
+	conf := st.config.apply(opts)
+	c := newContext(false, st.dialect, m, conf)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
@@ -84,8 +103,9 @@ func (st *SQLTemplate) Exec(text string, m map[string]interface{}) (string, []in
 
 // ExecNamed executes given template with given map parameters.
 // This function replaces to named placeholder.
-func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}) (string, []sql.NamedArg, error) {
-	c := newContext(true, st.dialect, m, st.config)
+func (st *SQLTemplate) ExecNamed(text string, m map[string]interface{}, opts ...Option) (string, []sql.NamedArg, error) {
+	conf := st.config.apply(opts)
+	c := newContext(true, st.dialect, m, conf)
 	s, err := st.exec(c, text, m)
 	if err != nil {
 		return "", nil, err
