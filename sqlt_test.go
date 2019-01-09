@@ -1120,6 +1120,271 @@ WHERE id = :id`
 	}
 }
 
+func TestRange(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "names" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "names" $i) %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+		"names": []string{"Alex", "Bob", "Charlie"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = $1 OR 
+  name = $2 OR 
+  name = $3
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidString(args[0], "Alex") {
+		t.Errorf("exec failed: values should have Alex, but got %v", args)
+	}
+	if isInvalidString(args[1], "Bob") {
+		t.Errorf("exec failed: values should have Bob, but got %v", args)
+	}
+	if isInvalidString(args[2], "Charlie") {
+		t.Errorf("exec failed: values should have Charlie, but got %v", args)
+	}
+}
+
+func TestRangeNamed(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "names" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "names" $i) %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
+		"names": []string{"Alex", "Bob", "Charlie"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = :names__0 OR 
+  name = :names__1 OR 
+  name = :names__2
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidStringArg(args[0], "names__0", "Alex") {
+		t.Errorf("exec failed: values should have name = 'Alex', but got %v", args)
+	}
+	if isInvalidStringArg(args[1], "names__1", "Bob") {
+		t.Errorf("exec failed: values should have name = 'Bob', but got %v", args)
+	}
+	if isInvalidStringArg(args[2], "names__2", "Charlie") {
+		t.Errorf("exec failed: values should have name = 'Charlie', but got %v", args)
+	}
+}
+
+func TestRangeWithArray(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "names" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "names" $i) %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+		"names": [3]string{"Alex", "Bob", "Charlie"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = $1 OR 
+  name = $2 OR 
+  name = $3
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidString(args[0], "Alex") {
+		t.Errorf("exec failed: values should have Alex, but got %v", args)
+	}
+	if isInvalidString(args[1], "Bob") {
+		t.Errorf("exec failed: values should have Bob, but got %v", args)
+	}
+	if isInvalidString(args[2], "Charlie") {
+		t.Errorf("exec failed: values should have Charlie, but got %v", args)
+	}
+}
+
+func TestRangeNamedWithArray(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "names" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "names" $i) %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
+		"names": [3]string{"Alex", "Bob", "Charlie"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = :names__0 OR 
+  name = :names__1 OR 
+  name = :names__2
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidStringArg(args[0], "names__0", "Alex") {
+		t.Errorf("exec failed: values should have name = 'Alex', but got %v", args)
+	}
+	if isInvalidStringArg(args[1], "names__1", "Bob") {
+		t.Errorf("exec failed: values should have name = 'Bob', but got %v", args)
+	}
+	if isInvalidStringArg(args[2], "names__2", "Charlie") {
+		t.Errorf("exec failed: values should have name = 'Charlie', but got %v", args)
+	}
+}
+
+func TestRangeWithStruct(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "users" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "users" $i "Value") %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).Exec(s, map[string]interface{}{
+		"users": []Foo{
+			{"Alex"},
+			{"Bob"},
+			{"Charlie"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = $1 OR 
+  name = $2 OR 
+  name = $3
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidString(args[0], "Alex") {
+		t.Errorf("exec failed: values should have Alex, but got %v", args)
+	}
+	if isInvalidString(args[1], "Bob") {
+		t.Errorf("exec failed: values should have Bob, but got %v", args)
+	}
+	if isInvalidString(args[2], "Charlie") {
+		t.Errorf("exec failed: values should have Charlie, but got %v", args)
+	}
+}
+
+func TestRangeNamedWithStruct(t *testing.T) {
+	s := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+/*%- range $i, $v := get "users" %*/
+  /*%- if ne $i 0 %*/ OR /*% end %*/
+  name = /*% p (name "users" $i "Value") %*/''
+/*%- end %*/
+)`
+	query, args, err := sqlt.New(sqlt.Postgres).ExecNamed(s, map[string]interface{}{
+		"users": []Foo{
+			{"Alex"},
+			{"Bob"},
+			{"Charlie"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eSQL := `
+SELECT *
+FROM users
+WHERE sex = 'MALE'
+AND (
+  name = :users__0__Value OR 
+  name = :users__1__Value OR 
+  name = :users__2__Value
+)`
+	if eSQL != query {
+		t.Errorf("exec failed: expected %s, but got %s", eSQL, query)
+	}
+	if len(args) != 3 {
+		t.Errorf("exec failed: values should have 3 length, but got %v", args)
+	}
+	if isInvalidStringArg(args[0], "users__0__Value", "Alex") {
+		t.Errorf("exec failed: values should have name = 'Alex', but got %v", args)
+	}
+	if isInvalidStringArg(args[1], "users__1__Value", "Bob") {
+		t.Errorf("exec failed: values should have name = 'Bob', but got %v", args)
+	}
+	if isInvalidStringArg(args[2], "users__2__Value", "Charlie") {
+		t.Errorf("exec failed: values should have name = 'Charlie', but got %v", args)
+	}
+}
 func singleMap(k string, v interface{}) map[string]interface{} {
 	return map[string]interface{}{
 		k: v,
