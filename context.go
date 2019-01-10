@@ -91,6 +91,9 @@ func (c *context) Dig(names []string) (*param, error) {
 }
 
 func findValue(val reflect.Value, name string, prefix string) (reflect.Value, error) {
+	if i, err := strconv.Atoi(name); err == nil {
+		return findIndexValue(val, i, prefix)
+	}
 	// cannot find field from pointer or interface, but can find method from those.
 	// so at first search method.
 	v, err := findMethodValue(val, name, prefix)
@@ -140,6 +143,21 @@ func findFieldValue(val reflect.Value, name string, prefix string) (reflect.Valu
 		return v, fmt.Errorf("%q is unknown param", qname)
 	}
 	return v, nil
+}
+
+func findIndexValue(val reflect.Value, i int, prefix string) (reflect.Value, error) {
+	if val.Kind() == reflect.Ptr || val.Kind() == reflect.Interface {
+		return findIndexValue(val.Elem(), i, prefix)
+	}
+
+	if val.Kind() != reflect.Slice && val.Kind() != reflect.Array {
+		return val, fmt.Errorf("%q is not slice or array", prefix)
+	}
+
+	if val.Len() <= i {
+		return val, fmt.Errorf("%q is too short for index %d", prefix, i)
+	}
+	return val.Index(i), nil
 }
 
 func (c *context) AddArg(name string, value interface{}) {

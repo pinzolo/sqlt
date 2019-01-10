@@ -115,6 +115,21 @@ func (c *context) suffix(name string) string {
 
 }
 
+func (c *context) name(args ...interface{}) string {
+	if len(args) == 0 {
+		return ""
+	}
+	ss := make([]string, len(args), len(args))
+	for i, a := range args {
+		if s, ok := a.(string); ok {
+			ss[i] = s
+		} else {
+			ss[i] = fmt.Sprintf("%v", a)
+		}
+	}
+	return strings.Join(ss, ".")
+}
+
 func (c *context) paramWithEscapeLike(name string) string {
 	return c.paramWithFunc(name, func(name string, v interface{}) (string, interface{}) {
 		nv := c.escapeLike(v)
@@ -165,6 +180,7 @@ func (c *context) funcMap(funcs map[string]interface{}) template.FuncMap {
 	fm["infix"] = c.infix
 	fm["suffix"] = c.suffix
 	fm["escape"] = c.escapeLike
+	fm["name"] = c.name
 	return fm
 }
 
